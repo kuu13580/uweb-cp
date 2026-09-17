@@ -1,0 +1,34 @@
+{
+  "name": "uweb-cp",
+  "version": "0.0.0",
+  "description": "Micro Web Context Provider - hand structured context to a consumer LLM app and get structured data back, using Web standards only.",
+  "keywords": [
+    "clipboard",
+    "context",
+    "llm",
+    "pwa",
+    "structured-output",
+    "web-share"
+  ],
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.js",
+    "./transports": "./dist/transports/index.js",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --build"
+  },
+  "dependencies": {
+    "@standard-schema/spec": "^1.1.0"
+  }
+}
