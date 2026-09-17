@@ -62,13 +62,13 @@ exchange.listen((result) => {
 
 ## 開発
 
+ツールチェインは [Vite+](https://viteplus.dev/) に統合。
+
 ```sh
-pnpm install
-pnpm check       # format:check + lint + typecheck + test を一括
-pnpm build       # tsdown
-pnpm test        # vitest
-pnpm lint        # oxlint
-pnpm format      # oxfmt
+vp install
+vp check         # format + lint + 型チェック
+vp test run      # テスト
+vp run -r build  # ビルド
 ```
 
 リポジトリは `main/` を既定ワークツリーとし、並行作業は兄弟ディレクトリに worktree を切る構成。

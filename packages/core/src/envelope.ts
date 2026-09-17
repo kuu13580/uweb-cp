@@ -30,8 +30,8 @@ export type Envelope<T = unknown> = RequestEnvelope | ResponseEnvelope<T>
 
 export function isEnvelope(value: unknown): value is Envelope {
   if (typeof value !== 'object' || value === null) return false
-  const v = value as Record<string, unknown>
-  return v.ucp === ENVELOPE_VERSION && (v.kind === 'request' || v.kind === 'response')
+  if (!('ucp' in value) || !('kind' in value)) return false
+  return value.ucp === ENVELOPE_VERSION && (value.kind === 'request' || value.kind === 'response')
 }
 
 export function isResponseEnvelope<T = unknown>(value: unknown): value is ResponseEnvelope<T> {

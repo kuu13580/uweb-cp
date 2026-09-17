@@ -22,10 +22,16 @@ Web 標準のみでアプリ⇄チャット AI 間の構造化データ往復を
 
 ## コマンド
 
+ツールチェインは [Vite+](https://viteplus.dev/) に統合済み。Vitest / Oxlint / Oxfmt / tsdown を個別に入れず、`vite-plus` 1 つから使う。
+
 ```sh
-pnpm check      # format:check + lint + typecheck + test (CI と同じ)
-pnpm build      # tsdown
-pnpm test       # vitest
-pnpm lint       # oxlint
-pnpm format     # oxfmt (import 順の整列も担当)
+vp install         # 依存導入 (pnpm も併用可)
+vp check           # format + lint + 型チェックを一括
+vp check --fix     # 自動修正込み
+vp test run        # テスト
+vp run -r build    # 全パッケージのビルド (vp pack)
 ```
+
+- **lint / format の設定は root の `vite.config.ts`** に集約されている。`.oxlintrc.json` / `.oxfmtrc.json` は読まれないので置かない
+- `lint.options.typeAware` + `typeCheck` を有効にしているので、`vp check` が型チェックまで行う。別途 `tsc` を走らせる必要はない
+- `vp <name>` は組み込みコマンド、`vp run <name>` が package.json スクリプト
