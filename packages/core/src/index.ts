@@ -24,7 +24,13 @@ export {
   type SendInput,
   type SendResult,
 } from './exchange'
-export { type Extraction, type ExtractOptions, extractResponses, parseResponse } from './extract'
+export {
+  type Extraction,
+  type ExtractionVia,
+  type ExtractOptions,
+  extractResponses,
+  parseResponse,
+} from './extract'
 export { type BuildPromptOptions, type BuiltPrompt, buildPrompt } from './prompt'
 export {
   createLocalStorageStore,
