@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
+import type { UcpErrorCode } from './errors'
 
 /** LLM に渡す仕様記述。JSON Schema draft 2020-12 のサブセットを想定する。 */
 export type JSONSchema = Record<string, unknown>
@@ -36,4 +37,10 @@ export interface Issue {
   readonly path?: ReadonlyArray<string | number>
 }
 
-export type Result<T> = { ok: true; value: T } | { ok: false; issues: readonly Issue[] }
+/**
+ * 失敗時は「何が起きたか」の単一コードと、その内訳の issues を返す。
+ * issues は成功時にも非致命的な警告として付くため、失敗の判別は code で行う。
+ */
+export type Result<T> =
+  | { ok: true; value: T }
+  | { ok: false; code: UcpErrorCode; issues: readonly Issue[] }
