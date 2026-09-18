@@ -5,7 +5,11 @@ export type ShareTargetState = 'installed' | 'installable' | 'unsupported'
 export interface Capabilities {
   /** navigator.share が使えるか。 */
   webShare: boolean
-  webShareFiles: boolean
+  /**
+   * navigator.canShare が使えるか。実際にファイルを送れるかは
+   * canShare({ files }) で都度確かめる必要があるため、ここでは問い合わせ口の有無だけを見る。
+   */
+  canShareQuery: boolean
   clipboardWrite: boolean
   /** navigator.clipboard.readText。権限・ジェスチャ制約が強いので paste イベントを優先する。 */
   clipboardRead: boolean
@@ -25,7 +29,7 @@ export interface TransportRecommendation {
 
 const NONE: Capabilities = {
   webShare: false,
-  webShareFiles: false,
+  canShareQuery: false,
   clipboardWrite: false,
   clipboardRead: false,
   pasteEvent: false,
@@ -46,7 +50,7 @@ export function detectCapabilities(): Capabilities {
 
   return {
     webShare,
-    webShareFiles: webShare && hasMethod(nav, 'canShare'),
+    canShareQuery: webShare && hasMethod(nav, 'canShare'),
     clipboardWrite: hasMethod(clipboard, 'writeText'),
     clipboardRead: hasMethod(clipboard, 'readText'),
     pasteEvent: true,

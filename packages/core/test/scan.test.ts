@@ -80,6 +80,16 @@ describe('findKeyedObjects', () => {
     expect(findKeyedObjects(text, 'ucp')).toHaveLength(0)
   })
 
+  // 後方走査は lastIndexOf を使うが、負の fromIndex は 0 に丸められる。
+  // 位置 0 が `{` かつそこから成立しない入力は、打ち切りを忘れると無限ループになる。
+  it('terminates when the text opens with a brace that never yields an object', () => {
+    expect(findKeyedObjects('{ garbage "ucp": 1', 'ucp')).toHaveLength(0)
+  })
+
+  it('terminates on a lone opening brace', () => {
+    expect(findKeyedObjects('{', 'ucp')).toHaveLength(0)
+  })
+
   it('exposes the parsed value', () => {
     const spans = findKeyedObjects('{"ucp":1,"kind":"response"}', 'ucp')
     expect(spans[0]?.value).toEqual({ ucp: 1, kind: 'response' })
@@ -97,6 +107,10 @@ describe('findObjects', () => {
     const text = 'open { then {"z":2}'
     const spans = findObjects(text)
     expect(spans.map((s) => sliceOf(text, s))).toEqual(['{"z":2}'])
+  })
+
+  it('terminates on a lone opening brace', () => {
+    expect(findObjects('{')).toHaveLength(0)
   })
 })
 

@@ -18,7 +18,7 @@ describe('detectCapabilities', () => {
 
     expect(detectCapabilities()).toEqual({
       webShare: false,
-      webShareFiles: false,
+      canShareQuery: false,
       clipboardWrite: false,
       clipboardRead: false,
       pasteEvent: false,
@@ -37,7 +37,7 @@ describe('detectCapabilities', () => {
 
     const caps = detectCapabilities()
     expect(caps.webShare).toBe(true)
-    expect(caps.webShareFiles).toBe(true)
+    expect(caps.canShareQuery).toBe(true)
     expect(caps.clipboardWrite).toBe(true)
     expect(caps.clipboardRead).toBe(true)
     expect(caps.pasteEvent).toBe(true)
@@ -99,7 +99,7 @@ describe('detectCapabilities', () => {
 
 const caps = (overrides: Partial<Capabilities>): Capabilities => ({
   webShare: false,
-  webShareFiles: false,
+  canShareQuery: false,
   clipboardWrite: false,
   clipboardRead: false,
   pasteEvent: true,
