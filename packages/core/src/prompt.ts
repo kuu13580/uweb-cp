@@ -1,4 +1,4 @@
-import type { RequestEnvelope } from './envelope'
+import { ENVELOPE_VERSION, FENCE_INFO, type RequestEnvelope } from './envelope'
 import type { Contract } from './types'
 
 export interface BuildPromptOptions<T> {
@@ -11,6 +11,7 @@ export interface BuildPromptOptions<T> {
   rid: string
   /** 出力に含める例の最大数。 */
   maxExamples?: number
+  /** 足場の言語。`ja` で始まる値のみ日本語、既定は英語。 */
   locale?: string
 }
 
@@ -23,7 +24,94 @@ export interface BuiltPrompt {
   length: number
 }
 
-/** TODO: 実装。依頼文 + JSON Schema + 応答封筒テンプレートを組み立てる。 */
-export function buildPrompt<T>(_options: BuildPromptOptions<T>): BuiltPrompt {
-  throw new Error('not implemented')
+const DEFAULT_MAX_EXAMPLES = 2
+
+/**
+ * 依頼文・要求封筒・応答テンプレートを 1 本の Markdown に組み立てる。
+ *
+ * ライブラリが引き受けるのは「構造化データとして受け取れること」だけなので、
+ * 足場はそのための最小限に留め、何をさせたいかは instruction に委ねる。
+ */
+export function buildPrompt<T>(options: BuildPromptOptions<T>): BuiltPrompt {
+  const { contract, context, rid, instruction, maxExamples = DEFAULT_MAX_EXAMPLES } = options
+  const t = strings(options.locale)
+
+  const request: RequestEnvelope = {
+    ucp: ENVELOPE_VERSION,
+    kind: 'request',
+    rid,
+    contract: contract.ref,
+    schema: contract.jsonSchema,
+    ...(context === undefined ? {} : { context }),
+  }
+
+  const sections: string[] = []
+  const lead = instruction ?? contract.description
+  if (lead) sections.push(lead)
+
+  sections.push(`${t.request}\n\n${fence(JSON.stringify(request, null, 2))}`)
+  sections.push(`${t.output}\n\n${fence(responseTemplate(rid, contract.ref, t.dataPlaceholder))}`)
+  sections.push(t.rules.map((rule) => `- ${rule}`).join('\n'))
+
+  const examples = contract.examples?.slice(0, maxExamples) ?? []
+  if (examples.length > 0) {
+    const shown = examples.map((e) => fence(JSON.stringify(e, null, 2), 'json')).join('\n\n')
+    sections.push(`${t.examples}\n\n${shown}`)
+  }
+
+  const text = sections.join('\n\n')
+  return { text, request, length: text.length }
+}
+
+function fence(body: string, info: string = FENCE_INFO): string {
+  return `\`\`\`${info}\n${body}\n\`\`\``
+}
+
+/** 実 JSON ではなく雛形。data だけが差し替え箇所であることを見せる。 */
+function responseTemplate(rid: string, contract: string, placeholder: string): string {
+  return [
+    '{',
+    `  "ucp": ${ENVELOPE_VERSION},`,
+    '  "kind": "response",',
+    `  "rid": ${JSON.stringify(rid)},`,
+    `  "contract": ${JSON.stringify(contract)},`,
+    `  "data": ${placeholder}`,
+    '}',
+  ].join('\n')
+}
+
+interface Strings {
+  request: string
+  output: string
+  rules: readonly string[]
+  examples: string
+  dataPlaceholder: string
+}
+
+const EN: Strings = {
+  request: 'Machine-readable request:',
+  output: 'Reply with exactly one envelope in this shape:',
+  rules: [
+    'Copy `rid` and `contract` unchanged.',
+    'Make `data` conform to the `schema` in the request above.',
+    'Surrounding prose is fine, but include the envelope verbatim as JSON.',
+  ],
+  examples: 'Examples of valid `data`:',
+  dataPlaceholder: '<the result, conforming to schema>',
+}
+
+const JA: Strings = {
+  request: '機械可読の要求:',
+  output: '次の形の封筒をちょうど 1 つ返してください:',
+  rules: [
+    '`rid` と `contract` はそのまま写してください。',
+    '`data` は上の `schema` に従わせてください。',
+    '前後に説明を書いても構いませんが、封筒は JSON のまま含めてください。',
+  ],
+  examples: '`data` の例:',
+  dataPlaceholder: '<schema に従う結果>',
+}
+
+function strings(locale?: string): Strings {
+  return locale?.toLowerCase().startsWith('ja') ? JA : EN
 }
