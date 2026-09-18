@@ -1,3 +1,4 @@
+import { getProp, hasMethod, isTrue } from './reflect'
 import type { InboundTransportId, OutboundTransportId } from './transports/types'
 
 export type ShareTargetState = 'installed' | 'installable' | 'unsupported'
@@ -44,7 +45,7 @@ export function detectCapabilities(): Capabilities {
   }
 
   const nav: unknown = globalThis.navigator
-  const clipboard: unknown = Reflect.get(Object(nav), 'clipboard')
+  const clipboard = getProp(nav, 'clipboard')
   const installedPwa = detectInstalledPwa()
   const webShare = hasMethod(nav, 'share')
 
@@ -88,7 +89,7 @@ function detectInstalledPwa(): boolean {
     }
   }
   // iOS Safari のホーム画面追加は display-mode を返さず、この非標準プロパティだけが手がかり
-  return hasTrue(globalThis.navigator, 'standalone')
+  return isTrue(globalThis.navigator, 'standalone')
 }
 
 /**
@@ -100,14 +101,4 @@ function detectShareTarget(installedPwa: boolean): ShareTargetState {
   const chromium = typeof nav === 'object' && nav !== null && 'userAgentData' in nav
   if (!chromium || !('serviceWorker' in globalThis.navigator)) return 'unsupported'
   return installedPwa ? 'installed' : 'installable'
-}
-
-function hasMethod(target: unknown, name: string): boolean {
-  if (typeof target !== 'object' || target === null) return false
-  return typeof Reflect.get(target, name) === 'function'
-}
-
-function hasTrue(target: unknown, name: string): boolean {
-  if (typeof target !== 'object' || target === null) return false
-  return Reflect.get(target, name) === true
 }
