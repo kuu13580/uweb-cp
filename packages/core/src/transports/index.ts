@@ -10,6 +10,8 @@ export { type DeepLinkProvider, deepLinkTransport } from './outbound/deep-link'
 export { downloadTransport } from './outbound/download'
 export { webShareTransport } from './outbound/web-share'
 export type {
+  InboundTransportId,
+  OutboundTransportId,
   InboundHandler,
   InboundMeta,
   InboundTransport,
