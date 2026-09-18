@@ -32,6 +32,7 @@ export {
   parseResponse,
 } from './extract'
 export { type BuildPromptOptions, type BuiltPrompt, buildPrompt } from './prompt'
+export { createRid } from './rid'
 export {
   createLocalStorageStore,
   createMemoryStore,
