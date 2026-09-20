@@ -1,0 +1,18 @@
+{
+  "name": "@uweb-cp/example-travel-pwa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/make-icons.mjs && vp build",
+    "dev": "node scripts/make-icons.mjs && vp dev",
+    "icons": "node scripts/make-icons.mjs",
+    "preview": "vp preview"
+  },
+  "dependencies": {
+    "uweb-cp": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "vite-plus": "catalog:"
+  }
+}

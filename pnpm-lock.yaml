@@ -39,6 +39,19 @@ importers:
         specifier: 'catalog:'
         version: 0.3.2(@types/node@22.20.3)(happy-dom@20.14.5)(typescript@7.0.2)(yaml@2.9.1)
 
+  examples/travel-pwa:
+    dependencies:
+      uweb-cp:
+        specifier: workspace:*
+        version: link:../../packages/core
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.3.2(@types/node@22.20.3)(happy-dom@20.14.5)(typescript@7.0.2)(yaml@2.9.1)
+
   packages/core:
     dependencies:
       '@standard-schema/spec':
@@ -1277,6 +1290,9 @@ packages:
   yuku-parser@0.9.5:
     resolution: {integrity: sha512-IBnAdNVMswWbJcM7woPluOudectJzFjJ1N8jVRxP9Uq4CIv5hZdBIcdmtRbFDYF/Ph2j2gVup4YJ4N9mh0jYFA==}
 
+  zod@4.6.5:
+    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
+
 snapshots:
 
   '@babel/code-frame@7.29.7':
@@ -2273,3 +2289,5 @@ snapshots:
       '@yuku-parser/binding-linux-x64-musl': 0.9.5
       '@yuku-parser/binding-win32-arm64': 0.9.5
       '@yuku-parser/binding-win32-x64': 0.9.5
+
+  zod@4.6.5: {}

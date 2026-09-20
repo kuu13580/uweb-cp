@@ -1,6 +1,9 @@
 node_modules/
 dist/
 coverage/
+
+# 生成物 (examples/travel-pwa/scripts/make-icons.mjs)
+examples/travel-pwa/public/icon-*.png
 *.tsbuildinfo
 .DS_Store
 .env

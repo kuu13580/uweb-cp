@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1c2a5e" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <title>µweb-cp 旅行日程デモ</title>
+    <style>
+      :root {
+        --ground: #f5f6f8;
+        --surface: #fff;
+        --surface-2: #eceff4;
+        --ink: #13171e;
+        --muted: #616b7c;
+        --line: #dfe3ea;
+        --accent: #1c2a5e;
+        --ok: #0d7a63;
+        --warn: #9a6412;
+        --bad: #a3282d;
+        color-scheme: light dark;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ground: #0f1117;
+          --surface: #171b22;
+          --surface-2: #1e232b;
+          --ink: #e8ebf1;
+          --muted: #949daf;
+          --line: #262c36;
+          --accent: #8aa1f7;
+          --ok: #45c2a4;
+          --warn: #d69f52;
+          --bad: #e8797d;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: max(16px, env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+        background: var(--ground);
+        color: var(--ink);
+        font:
+          15px/1.7 system-ui,
+          -apple-system,
+          'Hiragino Sans',
+          'Noto Sans JP',
+          sans-serif;
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        display: grid;
+        gap: 18px;
+      }
+
+      h1 {
+        font-size: 19px;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      h2 {
+        font-size: 13px;
+        margin: 0 0 10px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      p {
+        margin: 0 0 10px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+
+      label {
+        display: grid;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      input,
+      textarea,
+      button {
+        font: inherit;
+        color: inherit;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--ground);
+        padding: 9px 11px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        font-family: ui-monospace, monospace;
+        font-size: 12.5px;
+      }
+
+      button {
+        background: var(--accent);
+        color: var(--ground);
+        border-color: transparent;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button.ghost {
+        background: transparent;
+        color: var(--ink);
+        border-color: var(--line);
+        font-weight: 400;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-top: 12px;
+      }
+
+      .caps {
+        display: grid;
+        gap: 4px;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+      .caps div {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 3px 0;
+      }
+      .caps span:last-child {
+        color: var(--muted);
+      }
+      .yes {
+        color: var(--ok) !important;
+      }
+      .no {
+        color: var(--muted) !important;
+      }
+
+      #drop {
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        font-size: 12.5px;
+        color: var(--muted);
+        margin-top: 10px;
+      }
+      #drop.over {
+        border-color: var(--accent);
+        color: var(--ink);
+      }
+
+      #log {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 4px;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+      #log li {
+        border-left: 2px solid var(--line);
+        padding-left: 9px;
+        color: var(--muted);
+      }
+      #log li.ok {
+        border-color: var(--ok);
+        color: var(--ink);
+      }
+      #log li.warn {
+        border-color: var(--warn);
+      }
+      #log li.bad {
+        border-color: var(--bad);
+      }
+
+      pre {
+        background: var(--surface-2);
+        border-radius: 8px;
+        padding: 12px;
+        overflow-x: auto;
+        font-size: 12px;
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .day {
+        border-top: 1px solid var(--line);
+        padding-top: 10px;
+        margin-top: 10px;
+      }
+      .day:first-child {
+        border-top: 0;
+        margin-top: 0;
+        padding-top: 0;
+      }
+      .day h3 {
+        font-size: 14px;
+        margin: 0 0 6px;
+      }
+      .day ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .day time {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--muted);
+        margin-right: 6px;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>µweb-cp 旅行日程デモ</h1>
+        <p class="note">
+          条件を入れて AI に送り、返信をこの画面に貼り付けると日程表として取り込まれます。
+        </p>
+      </header>
+
+      <section class="card">
+        <h2>この端末で使える経路</h2>
+        <div class="caps" id="caps"></div>
+      </section>
+
+      <section class="card">
+        <h2>1. 送る</h2>
+        <div class="grid">
+          <label>行き先<input id="destination" value="金沢" /></label>
+          <label>泊数<input id="nights" type="number" min="0" max="14" value="2" /></label>
+          <label>出発日<input id="date" type="date" /></label>
+        </div>
+        <label style="margin-top: 10px"
+          >依頼したいこと<textarea id="instruction" style="min-height: 64px">
+和菓子と古い街並みを中心に、移動は徒歩とバスで。</textarea>
+        </label>
+        <div class="row">
+          <button id="send">AI に送る</button>
+          <button id="toggle-preview" class="ghost">プロンプトを見る</button>
+        </div>
+        <pre id="preview" hidden></pre>
+      </section>
+
+      <section class="card">
+        <h2>2. 受け取る</h2>
+        <p class="note">
+          AI
+          の返信をここに貼り付け（この画面のどこに貼っても拾います）。テキストファイルのドロップも可。
+        </p>
+        <textarea id="inbox" placeholder="AI の返信をそのまま貼り付け"></textarea>
+        <div id="drop">ここにテキストファイルをドロップ</div>
+      </section>
+
+      <section class="card" id="result-card" hidden>
+        <h2>取り込んだ日程</h2>
+        <div id="result"></div>
+      </section>
+
+      <section class="card">
+        <h2>ログ</h2>
+        <ul id="log"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -59,6 +59,7 @@ exchange.listen((result) => {
 - [アーキテクチャ](./docs/architecture.md)
 - [UCP-1 封筒フォーマット](./docs/protocol.md)
 - [設計判断の記録 (ADR)](./docs/adr/)
+- [実機検証用のデモ PWA](./examples/travel-pwa) — 共有シートや Share Target はここで確かめる
 
 ## 開発
 
