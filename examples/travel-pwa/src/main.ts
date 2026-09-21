@@ -138,7 +138,7 @@ const exchanges = {
   }),
 }
 
-const selected = () => exchanges[field('emit').value === 'now' ? 'now' : 'on-approval']
+const selected = () => exchanges[field('emit').value === 'on-approval' ? 'on-approval' : 'now']
 
 function currentInput(): SendInput {
   const instruction = field('instruction').value.trim()
@@ -221,6 +221,21 @@ el('import').addEventListener('click', () => {
 document.addEventListener('paste', (event) => {
   const text = event.clipboardData?.getData('text/plain') ?? ''
   log(`貼り付けを検知: ${text.length} 文字`)
+})
+
+/**
+ * AI アプリから戻ってきた直後に貼り付け先へ誘導する。
+ * 送信済みの往復が宙に浮いているときだけ出すので、ただ画面を切り替えただけでは鳴らない。
+ */
+async function nudgeIfWaiting(): Promise<void> {
+  const pending = await store.latest(itineraryContract.ref)
+  if (!pending || !el('result-card').hidden) return
+  field('inbox').focus()
+  log('戻ってきました。返信をここに貼り付けてください', 'warn')
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') void nudgeIfWaiting()
 })
 
 const drop = el('drop')
