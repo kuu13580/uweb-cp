@@ -8,7 +8,15 @@
 
 サーバも API キーも常駐プロセスも不要。運び手は利用者自身（共有シート / コピー&ペースト）。
 
-![アプリからチャット AI へ依頼文と JSON Schema を送り、検証済みの構造化データを受け取る往復](./docs/roundtrip.svg)
+## 試してみる
+
+行き先を変えて送ると、AI の返信が**検証済みの構造化データ**になって戻ってきます。
+
+<!-- demo:start -->
+
+→ **[ライブデモを開く](https://kuu13580.github.io/uweb-cp/)**（スマホでも動きます）
+
+<!-- demo:end -->
 
 ## インストール
 
@@ -19,6 +27,8 @@ npm i uweb-cp
 ランタイム依存はゼロ。検証だけ [Standard Schema](https://standardschema.dev/) 準拠のものを持ち込みます。
 
 ## 何を解決するか
+
+![アプリからチャット AI へ依頼文と JSON Schema を送り、検証済みの構造化データを受け取る往復](./docs/roundtrip.svg)
 
 「スマホの AI アプリで旅行の日程を詰めて、決まった内容をそのままアプリに取り込みたい」——
 この 1 往復のためだけに MCP サーバやローカル LLM を立てるのは重すぎる。
@@ -46,17 +56,6 @@ exchange.listen((result) => {
   if (result.ok) importItinerary(result.value.envelope.data)
 })
 ```
-
-## 試してみる
-
-この端末で実際に往復させられます。条件を送って AI に渡し、返ってきた返信を貼り付けると、
-検証済みの構造化データとして取り込まれます。
-
-<!-- demo:start -->
-
-→ **[ライブデモを開く](https://kuu13580.github.io/uweb-cp/)**（スマホでも動きます）
-
-<!-- demo:end -->
 
 ## 設計の軸
 

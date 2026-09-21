@@ -163,8 +163,28 @@ function renderDemo(): void {
   el('demo').innerHTML = `
     <div class="duo">
       <div>
-        <p class="step out">1. 送る</p>
-        <div class="row"><span class="k">行き先</span><input id="destination" value="金沢" /></div>
+        <p class="step out">1 送る</p>
+        <div class="row">
+          <input id="destination" value="金沢" aria-label="行き先" />
+          <button id="send">AI に送る</button>
+        </div>
+        <p class="hint">共有シートかクリップボードで送り出します。</p>
+      </div>
+      <div>
+        <p class="step in">2 受け取る</p>
+        <textarea id="inbox" placeholder="AI の返信をそのまま貼り付け"></textarea>
+        <div class="row">
+          <button id="import" class="sub">取り込む</button>
+          <button id="pull" class="sub" hidden>クリップボードから</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="result-card" hidden><div id="result"></div></div>
+
+    <details>
+      <summary>細かく指定する</summary>
+      <div class="more">
         <div class="row"><span class="k">泊数</span><input id="nights" type="number" min="0" max="14" value="2" /></div>
         <div class="row"><span class="k">出発日</span><input id="date" type="date" /></div>
         <div class="row"><span class="k">時機</span><select id="emit">
@@ -172,24 +192,12 @@ function renderDemo(): void {
           <option value="on-approval">承認してから出す (on-approval)</option>
         </select></div>
         <textarea id="instruction">和菓子と古い街並みを中心に、移動は徒歩とバスで。</textarea>
-        <div class="row">
-          <button id="send">AI に送る</button>
-          <button id="toggle-preview" class="sub">プロンプトを見る</button>
-        </div>
+        <div class="row"><button id="toggle-preview" class="sub">送るプロンプトを見る</button></div>
         <pre id="preview" hidden></pre>
-      </div>
-      <div>
-        <p class="step in">2. 受け取る</p>
-        <textarea id="inbox" placeholder="AI の返信をそのまま貼り付け"></textarea>
-        <div class="row">
-          <button id="import" class="sub">取り込む</button>
-          <button id="pull" class="sub" hidden>クリップボードから</button>
-        </div>
         <div id="drop">テキストファイルをドロップ</div>
-        <p class="hint">この画面のどこに貼っても拾います。反応しなければ「取り込む」を押してください。</p>
       </div>
-    </div>
-    <div id="result-card" hidden><div id="result"></div></div>
+    </details>
+
     <details>
       <summary>この端末で使える経路とログ</summary>
       <div class="caps" id="caps"></div>
