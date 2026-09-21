@@ -10,6 +10,19 @@ import type { Contract } from './types'
  */
 export type EmitTiming = 'now' | 'on-approval'
 
+/**
+ * 封筒を出したあと、利用者をどこへ戻すか。
+ *
+ * 封筒が出た時点で利用者は AI アプリの中にいる。放っておくと「コピーして戻る」に
+ * 気づかず往復が途切れるため、本文に一言添えさせる。
+ */
+export interface ReturnTo {
+  /** 利用者が画面上で認識しているアプリの呼び名。 */
+  name: string
+  /** 戻り先。タップで戻れるよう本文に添える。 */
+  url?: string
+}
+
 export interface BuildPromptOptions<T> {
   contract: Contract<T>
   /** アプリ側が渡す現在の文脈 (フォームの入力途中の値など)。 */
@@ -27,6 +40,8 @@ export interface BuildPromptOptions<T> {
    * `on-approval`: まず内容を詰めさせ、利用者が承認して初めて封筒を出させる。
    */
   emit?: EmitTiming
+  /** 指定すると「コピーして戻って貼り付けて」と案内させる。 */
+  returnTo?: ReturnTo
 }
 
 export interface BuiltPrompt {
@@ -58,6 +73,7 @@ export function buildPrompt<T>(options: BuildPromptOptions<T>): BuiltPrompt {
     rid,
     instruction,
     emit = 'now',
+    returnTo,
     maxExamples = DEFAULT_MAX_EXAMPLES,
   } = options
   const t = strings(options.locale)
@@ -79,7 +95,9 @@ export function buildPrompt<T>(options: BuildPromptOptions<T>): BuiltPrompt {
   sections.push(
     `${t.output[emit]}\n\n${fence(responseTemplate(rid, contract.ref, t.dataPlaceholder))}`,
   )
-  sections.push(t.rules[emit].map((rule) => `- ${rule}`).join('\n'))
+  const rules = [...t.rules[emit]]
+  if (returnTo) rules.push(t.handBack(returnTo))
+  sections.push(rules.map((rule) => `- ${rule}`).join('\n'))
 
   const examples = contract.examples?.slice(0, maxExamples) ?? []
   if (examples.length > 0) {
@@ -120,6 +138,7 @@ interface Strings {
   examples: string
   dataPlaceholder: string
   approval: string
+  handBack: (to: ReturnTo) => string
 }
 
 const EN_SHARED = [
@@ -146,6 +165,8 @@ const EN: Strings = {
   examples: 'Examples of valid `data`:',
   dataPlaceholder: '<the result, conforming to schema>',
   approval: 'approved',
+  handBack: (to) =>
+    `Right after the envelope, add one short line telling me to copy it and go back to ${where(to)} to paste it.`,
 }
 
 const JA_SHARED = [
@@ -171,6 +192,12 @@ const JA: Strings = {
   examples: '`data` の例:',
   dataPlaceholder: '<schema に従う結果>',
   approval: '確定',
+  handBack: (to) =>
+    `封筒の直後に「コピーして ${where(to)} に戻り、貼り付けてください」と 1 行添えてください。`,
+}
+
+function where(to: ReturnTo): string {
+  return to.url === undefined ? to.name : `${to.name} (${to.url})`
 }
 
 function strings(locale?: string): Strings {

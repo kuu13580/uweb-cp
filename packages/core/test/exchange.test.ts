@@ -147,6 +147,25 @@ describe('emit mode', () => {
     expect(clipboard.sent[0]).toContain('「確定」と答えたら')
   })
 
+  it('points the user back at the app it derived from the page', async () => {
+    document.title = '旅程メモ'
+    const clipboard = fakeOutbound('clipboard')
+    const { exchange } = make({ outbound: [clipboard], locale: 'ja' })
+
+    await exchange.send()
+
+    expect(clipboard.sent[0]).toContain('コピーして 旅程メモ')
+  })
+
+  it('can be told not to mention going back', async () => {
+    const clipboard = fakeOutbound('clipboard')
+    const { exchange } = make({ outbound: [clipboard], returnTo: false })
+
+    await exchange.send()
+
+    expect(clipboard.sent[0]).not.toContain('go back to')
+  })
+
   it('says nothing about approval by default', async () => {
     const { exchange } = make({ outbound: [fakeOutbound('clipboard')] })
     expect((await exchange.send()).approvalPhrase).toBeUndefined()

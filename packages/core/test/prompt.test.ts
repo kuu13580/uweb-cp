@@ -105,6 +105,30 @@ describe('buildPrompt', () => {
     }
   })
 
+  it('says nothing about going back unless asked', () => {
+    expect(build().text).not.toContain('コピーして')
+    expect(build().text).not.toContain('go back to')
+  })
+
+  it('tells the model to hand the user back to the app', () => {
+    const { text } = build({
+      locale: 'ja',
+      returnTo: { name: '旅程メモ', url: 'https://trip.example' },
+    })
+    expect(text).toContain('コピーして 旅程メモ (https://trip.example) に戻り、貼り付けてください')
+  })
+
+  it('omits the url when there is none', () => {
+    const { text } = build({ locale: 'ja', returnTo: { name: '旅程メモ' } })
+    expect(text).toContain('コピーして 旅程メモ に戻り')
+  })
+
+  it('adds the hand-back line in both emit modes', () => {
+    for (const emit of ['now', 'on-approval'] as const) {
+      expect(build({ emit, returnTo: { name: 'app' } }).text).toContain('go back to app')
+    }
+  })
+
   it('reports its own length', () => {
     const built = build()
     expect(built.length).toBe(built.text.length)

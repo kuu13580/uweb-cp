@@ -31,7 +31,13 @@ export {
   extractResponses,
   parseResponse,
 } from './extract'
-export { type BuildPromptOptions, type BuiltPrompt, buildPrompt, type EmitTiming } from './prompt'
+export {
+  type BuildPromptOptions,
+  type BuiltPrompt,
+  buildPrompt,
+  type EmitTiming,
+  type ReturnTo,
+} from './prompt'
 export { createRid } from './rid'
 export {
   createLocalStorageStore,
