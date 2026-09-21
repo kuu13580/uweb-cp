@@ -6,13 +6,15 @@
     "build": "node scripts/make-icons.mjs && vp build",
     "dev": "node scripts/make-icons.mjs && vp dev",
     "icons": "node scripts/make-icons.mjs",
-    "preview": "vp preview"
+    "preview": "vp preview",
+    "tunnel": "node scripts/tunnel.mjs"
   },
   "dependencies": {
     "uweb-cp": "workspace:*",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "qrcode-terminal": "^0.12.0",
     "vite-plus": "catalog:"
   }
 }

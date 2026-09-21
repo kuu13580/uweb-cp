@@ -23,7 +23,16 @@ const manifest = {
 
 const body = JSON.stringify(manifest, null, 2)
 
+/**
+ * 実機検証は HTTPS トンネル越しに行うが、Vite は既定で未知の Host を 403 で弾く。
+ * 先頭のドットはサブドメインを含む許可。検証用ドメインだけを通す。
+ */
+const TUNNEL_HOSTS = ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.io', '.loca.lt']
+
 export default defineConfig({
+  server: { allowedHosts: TUNNEL_HOSTS },
+  preview: { allowedHosts: TUNNEL_HOSTS },
+
   plugins: [
     {
       name: 'uweb-cp-manifest',

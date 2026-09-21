@@ -37,15 +37,25 @@ Share Target           installable
 
 ### モバイル (HTTPS 必須)
 
-`navigator.share`・Service Worker・PWA インストールはいずれも secure context でしか動かない。LAN 越しの `http://192.168.x.x` では確かめられないので、HTTPS を用意する。
+`navigator.share`・Service Worker・PWA インストールはいずれも secure context でしか動かない。LAN 越しの `http://192.168.x.x` では確かめられないので、HTTPS のトンネルを張る。
 
 ```sh
-vp run -r build
-vp run -F @uweb-cp/example-travel-pwa preview   # → http://localhost:4173
-cloudflared tunnel --url http://localhost:4173  # → https://xxx.trycloudflare.com
+pnpm run tunnel    # ビルド → preview → HTTPS トンネル → URL と QR を表示
 ```
 
-（静的ホスティングに `dist/` を上げても同じ。サブパス配下に置く場合は `vite.config.ts` の `base` と `SHARE_TARGET.action` を揃えること）
+QR をスマホで読めばそのまま開く。`cloudflared` が要るので、無ければ一度だけ:
+
+```sh
+curl -fsSL -o ~/.local/bin/cloudflared \
+  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+chmod +x ~/.local/bin/cloudflared
+```
+
+> **URL は起動のたびに変わる。**オリジンが変わると、インストール済み PWA も Share Target の登録も無効になる。
+> 7・8 を繰り返し試すなら、`dist/` を静的ホスティングに上げて URL を固定したほうが早い。
+> サブパス配下に置く場合は `vite.config.ts` の `base` と `SHARE_TARGET.action` を揃えること。
+
+トンネル越しの Host は Vite が既定で 403 にするため、`vite.config.ts` の `allowedHosts` で検証用ドメインだけ通してある。
 
 5. **共有シート** — 「AI に送る」→ OS の共有シートが開く → AI アプリを選ぶ → `via=web-share`
 6. **インストール** — ブラウザメニューからホーム画面に追加 → 再度開くと `PWA インストール済み: true`
@@ -63,3 +73,4 @@ iOS/Safari では 7 は動かない（Web Share Target 非対応）。そこは 
 | `vite.config.ts`         | manifest を組み立てる。`share_target` は `shareTargetManifest()` から出すので受信実装とずれない |
 | `scripts/make-icons.mjs` | インストール条件を満たすアイコンをその場で生成（画像をリポジトリに置かないため）                |
 | `test/app.test.ts`       | happy-dom で起動 → 貼り付け → 描画までの煙テスト                                                |
+| `scripts/tunnel.mjs`     | ビルド → preview → HTTPS トンネルを一息で立ち上げ、URL と QR を出す                             |
