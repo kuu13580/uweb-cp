@@ -37,10 +37,9 @@ Share Target           installable
      （`clipboardRead` が false の端末ではボタン自体が出ない）
 3. **フェンスが剥がれても通る** — Claude のコピーボタンはコードフェンスを落とすことがある。`via=fenced` ではなく `via=sentinel-scan` と出れば、フェンス無しでも拾えている
 4. **壊れた返信** — 封筒の無いテキストを貼る → `no-envelope`、契約に合わない `data` → `validation-failed` がログに出る
-
 5. **封筒を出す時機** — 「封筒を出させる時機」を切り替えて、AI の振る舞いが変わるか見る
-   - `on-approval`（既定）: いきなり JSON を出さず、内容を詰めてから「確定」と送ると封筒が出る
-   - `now`: その場で封筒を出す
+   - `now`（既定）: その場で封筒を出す
+   - `on-approval`: いきなり JSON を出さず、内容を詰めてから「確定」と送ると封筒が出る
 
 ### モバイル (HTTPS 必須)
 
@@ -59,17 +58,17 @@ chmod +x ~/.local/bin/cloudflared
 ```
 
 > **URL は起動のたびに変わる。**オリジンが変わると、インストール済み PWA も Share Target の登録も無効になる。
-> 7・8 を繰り返し試すなら、`dist/` を静的ホスティングに上げて URL を固定したほうが早い。
+> 8・9 を繰り返し試すなら、`dist/` を静的ホスティングに上げて URL を固定したほうが早い。
 > サブパス配下に置く場合は `vite.config.ts` の `base` と `SHARE_TARGET.action` を揃えること。
 
 トンネル越しの Host は Vite が既定で 403 にするため、`vite.config.ts` の `allowedHosts` で検証用ドメインだけ通してある。
 
-5. **共有シート** — 「AI に送る」→ OS の共有シートが開く → AI アプリを選ぶ → `via=web-share`
-6. **インストール** — ブラウザメニューからホーム画面に追加 → 再度開くと `PWA インストール済み: true`
-7. **Share Target (Chromium のみ)** — AI アプリで返信を共有 → 共有先に「µweb-cp trip」が出る → 選ぶとアプリが起動して取り込まれる。`Share Target: installed` かつ `受信` に `share-target` が含まれていることが前提
-8. **再読み込みで二重取り込みされない** — 7 の直後にリロードしても再取り込みされない（URL のクエリを消しているため）
+6. **共有シート** — 「AI に送る」→ OS の共有シートが開く → AI アプリを選ぶ → `via=web-share`
+7. **インストール** — ブラウザメニューからホーム画面に追加 → 再度開くと `PWA インストール済み: true`
+8. **Share Target (Chromium のみ)** — AI アプリで返信を共有 → 共有先に「µweb-cp trip」が出る → 選ぶとアプリが起動して取り込まれる。`Share Target: installed` かつ `受信` に `share-target` が含まれていることが前提
+9. **再読み込みで二重取り込みされない** — 8 の直後にリロードしても再取り込みされない（URL のクエリを消しているため）
 
-iOS/Safari では 7 は動かない（Web Share Target 非対応）。そこは `paste` が土台である理由そのもの（[ADR-0003](../../docs/adr/0003-paste-is-the-baseline-inbound.md)）。
+iOS/Safari では 8 は動かない（Web Share Target 非対応）。そこは `paste` が土台である理由そのもの（[ADR-0003](../../docs/adr/0003-paste-is-the-baseline-inbound.md)）。
 
 ## 中身
 
