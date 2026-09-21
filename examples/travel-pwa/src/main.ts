@@ -7,6 +7,7 @@ import {
   recommendTransports,
   type Result,
   type SendInput,
+  UcpError,
 } from 'uweb-cp'
 import { type Itinerary, itineraryContract } from './contract'
 
@@ -128,14 +129,17 @@ log(`起動。送信は ${recommendTransports(capabilities).outbound[0] ?? 'な�
 // 受信の挙動は emit に依らないので、応答待ちの store だけ共有して 2 つ持つ。
 // 実機で両モードを比べられるようにするための、このデモ固有の作り。
 const store = createLocalStorageStore()
+// 戻り先の文面はアプリの UX なので、ライブラリ任せにせずここで決める
+const base = {
+  contract: itineraryContract,
+  locale: 'ja',
+  store,
+  returnTo: { name: '旅行日程デモ', url: globalThis.location.origin },
+} as const
+
 const exchanges = {
-  now: createExchange({ contract: itineraryContract, locale: 'ja', store, emit: 'now' }),
-  'on-approval': createExchange({
-    contract: itineraryContract,
-    locale: 'ja',
-    store,
-    emit: 'on-approval',
-  }),
+  now: createExchange({ ...base, emit: 'now' }),
+  'on-approval': createExchange({ ...base, emit: 'on-approval' }),
 }
 
 const selected = () => exchanges[field('emit').value === 'on-approval' ? 'on-approval' : 'now']
@@ -215,6 +219,23 @@ async function importFromInbox(): Promise<void> {
 
 el('import').addEventListener('click', () => {
   void importFromInbox()
+})
+
+/** 引き取りは利用者の操作の中からしか呼べないので、ボタンの中で呼ぶ。 */
+async function pullFromClipboard(): Promise<void> {
+  try {
+    log('クリップボードを読みます…')
+    handleResult(await exchanges.now.pull())
+  } catch (error) {
+    const aborted = error instanceof UcpError && error.code === 'transport-aborted'
+    log(aborted ? 'クリップボードの読み取りを拒否されました' : '読み取れませんでした', 'bad')
+  }
+}
+
+// 使えない端末では出さない。押せるのに必ず失敗するボタンは出さないほうがよい
+el('pull').hidden = !capabilities.clipboardRead
+el('pull').addEventListener('click', () => {
+  void pullFromClipboard()
 })
 
 // 診断用: 受信そのものが起きているかを、解釈の成否と切り離して見せる

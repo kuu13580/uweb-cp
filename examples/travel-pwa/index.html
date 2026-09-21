@@ -301,12 +301,12 @@
         </p>
         <textarea id="inbox" placeholder="AI の返信をそのまま貼り付け"></textarea>
         <div class="row">
-          <button id="import">取り込む</button>
-          <span class="note"
-            >貼り付けただけで反応しないときはこのボタン。端末によっては paste
-            イベントが飛んでこない</span
-          >
+          <button id="import">貼り付けた内容を取り込む</button>
+          <button id="pull" class="ghost" hidden>クリップボードから取り込む</button>
         </div>
+        <p class="note">
+          貼り付けただけで反応しないときは上のボタン。端末によっては paste イベントが飛んでこない。
+        </p>
         <div id="drop">ここにテキストファイルをドロップ</div>
       </section>
 
