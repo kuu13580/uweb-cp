@@ -8,12 +8,15 @@
 
 サーバも API キーも常駐プロセスも不要。運び手は利用者自身（共有シート / コピー&ペースト）。
 
+![アプリからチャット AI へ依頼文と JSON Schema を送り、検証済みの構造化データを受け取る往復](./docs/roundtrip.svg)
+
+## インストール
+
+```sh
+npm i uweb-cp
 ```
-  あなたのWebアプリ  ──[ 依頼文 + JSON Schema ]──▶  Claude / ChatGPT / Gemini アプリ
-        ▲                                                      │
-        └────────[ 検証済みの構造化データ ]────────────────────┘
-                 Web Share Target / paste / drop
-```
+
+ランタイム依存はゼロ。検証だけ [Standard Schema](https://standardschema.dev/) 準拠のものを持ち込みます。
 
 ## 何を解決するか
 

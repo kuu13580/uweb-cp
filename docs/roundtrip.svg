@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 152" width="680" height="152" role="img" aria-label="アプリからチャット AI へ依頼文と JSON Schema を送り、検証済みの構造化データを受け取る往復">
+  <!--
+    README と公開ページの両方で使うため、テーマに依らず読める色だけで描いている。
+    GitHub の画像はプロキシ経由で prefers-color-scheme が効かないため。
+  -->
+  <defs>
+    <marker id="ucp-out" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3f63cf"/>
+    </marker>
+    <marker id="ucp-in" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0f8a6a"/>
+    </marker>
+  </defs>
+
+  <g font-family="system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif">
+    <rect x="4" y="38" width="176" height="76" rx="6" fill="none" stroke="#8b939f" stroke-width="1.2"/>
+    <text x="92" y="70" text-anchor="middle" fill="#7d8694" font-size="13.5" font-weight="600">あなたの Web アプリ</text>
+    <text x="92" y="91" text-anchor="middle" fill="#8b939f" font-size="11" font-family="ui-monospace, monospace">uweb-cp</text>
+
+    <rect x="500" y="38" width="176" height="76" rx="6" fill="none" stroke="#8b939f" stroke-width="1.2"/>
+    <text x="588" y="66" text-anchor="middle" fill="#7d8694" font-size="13.5" font-weight="600">チャット AI</text>
+    <text x="588" y="87" text-anchor="middle" fill="#8b939f" font-size="11" font-family="ui-monospace, monospace">Claude / ChatGPT / …</text>
+
+    <line x1="188" y1="62" x2="490" y2="62" stroke="#3f63cf" stroke-width="1.6" marker-end="url(#ucp-out)"/>
+    <text x="339" y="52" text-anchor="middle" fill="#3f63cf" font-size="12" font-weight="600">依頼文 + JSON Schema</text>
+    <text x="339" y="79" text-anchor="middle" fill="#8b939f" font-size="10.5" font-family="ui-monospace, monospace">clipboard / navigator.share</text>
+
+    <line x1="492" y1="98" x2="190" y2="98" stroke="#0f8a6a" stroke-width="1.6" marker-end="url(#ucp-in)"/>
+    <text x="339" y="120" text-anchor="middle" fill="#0f8a6a" font-size="12" font-weight="600">検証済みの構造化データ</text>
+    <text x="339" y="138" text-anchor="middle" fill="#8b939f" font-size="10.5" font-family="ui-monospace, monospace">paste / Web Share Target / drop</text>
+  </g>
+</svg>

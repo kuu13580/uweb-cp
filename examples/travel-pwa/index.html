@@ -23,7 +23,12 @@
         --code-bg: #f3f4f7;
         --link: #1a4fb8;
         --navy: #1c2a5e;
-        --ok: #1a6b4f;
+        /* 差し色。生きている箇所にだけ使う (タブの選択、コピー成功、見出しのアンカー) */
+        --accent: #9a6412;
+        /* 図と同じ往復の向き。デモの「送る / 受け取る」と対応させる */
+        --out: #3f63cf;
+        --in: #0f8a6a;
+        --ok: #12735a;
         --bad: #a3282d;
         --warn: #8a5a12;
         --field: #fff;
@@ -43,6 +48,9 @@
           --code-bg: #1b1f25;
           --link: #7ea3f0;
           --navy: #b9c9f5;
+          --accent: #dfa658;
+          --out: #8aa1f7;
+          --in: #45b894;
           --ok: #45b894;
           --bad: #e8797d;
           --warn: #d9a45a;
@@ -59,6 +67,9 @@
         --code-bg: #1b1f25;
         --link: #7ea3f0;
         --navy: #b9c9f5;
+        --accent: #dfa658;
+        --out: #8aa1f7;
+        --in: #45b894;
         --ok: #45b894;
         --bad: #e8797d;
         --warn: #d9a45a;
@@ -203,6 +214,7 @@
 
       .demo {
         border: 1px solid var(--line);
+        border-left: 2px solid var(--accent);
         border-radius: 5px;
         padding: 16px;
         margin: 0 0 14px;
@@ -220,6 +232,14 @@
         letter-spacing: 0.06em;
         color: var(--dim);
         margin: 0 0 10px;
+      }
+
+      .step.out {
+        color: var(--out);
+      }
+
+      .step.in {
+        color: var(--in);
       }
 
       .row {
@@ -432,6 +452,197 @@
         color: var(--ink);
       }
 
+      /* ---- sticky ヘッダ ---- */
+
+      .bar {
+        position: sticky;
+        top: env(safe-area-inset-top, 0px);
+        z-index: 10;
+        margin: 0 -16px 22px;
+        padding: 9px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--bg) 86%, transparent);
+        backdrop-filter: blur(10px);
+        font-size: 13px;
+      }
+
+      .bar .mark {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-family: var(--mono);
+        font-weight: 600;
+        color: var(--navy);
+        text-decoration: none;
+      }
+
+      .bar nav {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .bar nav a {
+        color: var(--dim);
+        text-decoration: none;
+      }
+
+      .bar nav a:hover {
+        color: var(--ink);
+        text-decoration: underline;
+      }
+
+      #theme {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 6px;
+        background: transparent;
+        border-color: var(--line);
+        color: var(--dim);
+      }
+
+      /* ---- コードブロック: Shiki + コピー ---- */
+
+      .code {
+        position: relative;
+        margin: 0 0 14px;
+      }
+
+      .code pre {
+        margin: 0;
+        padding: 13px 15px;
+        background: var(--code-bg);
+        border: 1px solid var(--hair);
+        border-radius: 4px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.8;
+      }
+
+      /* Shiki の 2 テーマを CSS 側で切り替える */
+      .code .shiki,
+      .code .shiki span {
+        color: var(--shiki-light);
+        background-color: transparent;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) .code .shiki,
+        :root:not([data-theme='light']) .code .shiki span {
+          color: var(--shiki-dark);
+        }
+      }
+
+      :root[data-theme='dark'] .code .shiki,
+      :root[data-theme='dark'] .code .shiki span {
+        color: var(--shiki-dark);
+      }
+
+      .copy {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 5px;
+        background: var(--bg);
+        border-color: var(--line);
+        color: var(--dim);
+        opacity: 0;
+        transition: opacity 0.12s;
+      }
+
+      .code:hover .copy,
+      .copy:focus-visible {
+        opacity: 1;
+      }
+
+      .copy.done {
+        color: var(--accent);
+        border-color: var(--accent);
+        opacity: 1;
+      }
+
+      /* ---- install タブ ---- */
+
+      .install {
+        margin-bottom: 14px;
+      }
+
+      .install .tabs {
+        display: flex;
+        gap: 2px;
+        margin-bottom: -1px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .install .tabs button {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        padding: 2px 11px;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 4px 4px 0 0;
+        color: var(--dim);
+        font-weight: 400;
+      }
+
+      .install .tabs button[aria-selected='true'] {
+        background: var(--code-bg);
+        border-color: var(--hair);
+        border-bottom-color: var(--code-bg);
+        color: var(--ink);
+        box-shadow: inset 0 2px 0 var(--accent);
+      }
+
+      .install .code {
+        margin: 0;
+      }
+
+      .install .code pre {
+        border-radius: 0 4px 4px 4px;
+      }
+
+      /* ---- 往復の図 ---- */
+
+      .fig {
+        margin: 0 0 16px;
+        padding: 14px 10px;
+        border: 1px solid var(--hair);
+        border-radius: 4px;
+      }
+
+      .fig svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      /* ---- 見出しアンカー ---- */
+
+      h2:hover .anchor {
+        color: var(--accent);
+      }
+
+      /* ---- フッタ ---- */
+
+      footer {
+        margin-top: 44px;
+        padding-top: 14px;
+        border-top: 1px solid var(--hair);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+        font-size: 12.5px;
+        color: var(--dim);
+      }
+
       [hidden] {
         display: none !important;
       }
@@ -462,7 +673,24 @@
     </style>
   </head>
   <body>
+    <header class="bar">
+      <a class="mark" href="." aria-label="uweb-cp トップ"><span id="logo"></span>uweb-cp</a>
+      <nav>
+        <a href="#試してみる">試してみる</a>
+        <a href="https://github.com/kuu13580/uweb-cp">GitHub</a>
+        <button type="button" id="theme" aria-label="配色を切り替える"></button>
+      </nav>
+    </header>
     <main><!--README--></main>
+    <footer>
+      <span>MIT</span>
+      <a href="https://github.com/kuu13580/uweb-cp">GitHub</a>
+      <a href="https://github.com/kuu13580/uweb-cp/blob/main/docs/architecture.md"
+        >アーキテクチャ</a
+      >
+      <a href="https://github.com/kuu13580/uweb-cp/blob/main/docs/protocol.md">UCP-1 封筒</a>
+      <a href="https://github.com/kuu13580/uweb-cp/blob/main/CONTRIBUTING.md">CONTRIBUTING</a>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

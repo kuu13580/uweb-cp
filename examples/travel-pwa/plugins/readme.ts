@@ -2,10 +2,12 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import MarkdownIt from 'markdown-it'
+import { codeToHtml } from 'shiki'
 import type { Plugin } from 'vite-plus'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const README = join(HERE, '..', '..', '..', 'README.md')
+const ROOT = join(HERE, '..', '..', '..')
+const README = join(ROOT, 'README.md')
 
 const REPO = 'https://github.com/kuu13580/uweb-cp'
 const BRANCH = 'main'
@@ -16,6 +18,9 @@ const MOUNT = '<div id="demo" class="demo"></div>'
 
 const PLACEHOLDER = '<!--README-->'
 
+/** 言語を書いていないブロックは shell として塗る。README の install はこれ。 */
+const DEFAULT_LANG = 'shell'
+
 /**
  * README をページの本文にする。
  *
@@ -23,11 +28,15 @@ const PLACEHOLDER = '<!--README-->'
  * 手を入れる人向けの手順は CONTRIBUTING.md へ分けてあるので、丸ごと出して問題ない。
  */
 export function readmePage(): Plugin {
-  const render = () => {
+  const render = async () => {
     const md = new MarkdownIt({ html: true, linkify: true })
-    const source = readFileSync(README, 'utf8')
-    const html = md.render(source)
-    return dropEmptyHeads(withAnchors(toRepoLinks(html))).replace(DEMO, MOUNT)
+    const html = md.render(readFileSync(README, 'utf8'))
+
+    // タブで包むのは塗る前。塗った後だとコマンドが span に分断されて見つけられない
+    const painted = await highlight(installTabs(html))
+
+    const steps = [dropEmptyHeads, withAnchors, toRepoLinks, inlineLocalSvg]
+    return steps.reduce((acc, step) => step(acc), painted).replace(DEMO, MOUNT)
   }
 
   return {
@@ -35,17 +44,86 @@ export function readmePage(): Plugin {
 
     transformIndexHtml: {
       order: 'pre',
-      handler: (html) => html.replace(PLACEHOLDER, render),
+      handler: async (html) => html.replace(PLACEHOLDER, await render()),
     },
 
     configureServer(server) {
-      // README を直せば即反映されるようにする
-      server.watcher.add(README)
+      // README や図を直せば即反映されるようにする
+      server.watcher.add([README, join(ROOT, 'docs')])
       server.watcher.on('change', (file) => {
-        if (file === README) server.ws.send({ type: 'full-reload' })
+        if (file.endsWith('README.md') || file.endsWith('.svg')) {
+          server.ws.send({ type: 'full-reload' })
+        }
       })
     },
   }
+}
+
+/**
+ * コードブロックを Shiki で塗る。明暗 2 テーマを CSS 変数で持たせるので、
+ * 配色の切り替えはページ側の CSS だけで済む。
+ */
+async function highlight(html: string): Promise<string> {
+  const blocks = [
+    ...html.matchAll(/<pre><code(?: class="language-(\w+)")?>([\s\S]*?)<\/code><\/pre>/g),
+  ]
+
+  const painted = await Promise.all(
+    blocks.map(([, lang, body]) =>
+      codeToHtml(unescape(body ?? ''), {
+        lang: lang ?? DEFAULT_LANG,
+        themes: { light: 'github-light', dark: 'github-dark' },
+        defaultColor: false,
+      }),
+    ),
+  )
+
+  return blocks.reduce((acc, [whole, lang], i) => {
+    const lg = lang ?? DEFAULT_LANG
+    return acc.replace(whole, `<div class="code" data-lang="${lg}">${painted[i] ?? ''}</div>`)
+  }, html)
+}
+
+function unescape(body: string): string {
+  return body
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&')
+}
+
+/**
+ * `npm i uweb-cp` のブロックに、他のパッケージマネージャのタブを添える。
+ * コマンドはタブ名から導けるので、README には npm の 1 行だけ書いておけばよい。
+ */
+function installTabs(html: string): string {
+  const INSTALL =
+    /<pre><code(?: class="language-(?:sh|shell|bash)")?>npm i ([\w@/-]+)\n?<\/code><\/pre>/
+  return html.replace(INSTALL, (block, pkg: string) => {
+    const tabs = ['npm', 'pnpm', 'yarn', 'bun']
+      .map(
+        (m, i) =>
+          `<button type="button" role="tab" data-pm="${m}" aria-selected="${i === 0}">${m}</button>`,
+      )
+      .join('')
+    return `<div class="install" data-pkg="${pkg}"><div class="tabs" role="tablist">${tabs}</div>${block}</div>`
+  })
+}
+
+/**
+ * ローカルの SVG は img で参照せず、中身をそのまま埋める。
+ * README では画像として、ページでは本文の一部として同じ 1 ファイルを使うため。
+ */
+function inlineLocalSvg(html: string): string {
+  return html.replace(/<img src="\.\/([^"]+\.svg)"[^>]*>/g, (all, path: string) => {
+    try {
+      const svg = readFileSync(join(ROOT, path), 'utf8').replace(/<\?xml[\s\S]*?\?>\s*/, '')
+      return `<figure class="fig">${svg}</figure>`
+    } catch {
+      return all
+    }
+  })
 }
 
 /**
@@ -69,12 +147,20 @@ function dropEmptyHeads(html: string): string {
   )
 }
 
-/** 見出しに id と `#` を付ける。ドキュメントとして参照できるように。 */
+/**
+ * 見出しに id と `#` を付ける。
+ * id は見出し文から作る。連番だと節を足したときにリンクが黙って別の節を指すため。
+ */
 function withAnchors(html: string): string {
-  let n = 0
   return html.replace(/<h2>(.*?)<\/h2>/g, (_all, text: string) => {
-    n += 1
-    const id = `s${n}`
+    const id = slug(text)
     return `<h2 id="${id}"><a class="anchor" href="#${id}" aria-label="この節へのリンク">#</a>${text}</h2>`
   })
+}
+
+function slug(text: string): string {
+  return text
+    .replace(/<[^>]+>/g, '')
+    .trim()
+    .replaceAll(' ', '-')
 }

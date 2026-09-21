@@ -10,6 +10,7 @@ import {
   UcpError,
 } from 'uweb-cp'
 import { type Itinerary, itineraryContract } from './contract'
+import { icon } from './icons'
 
 // --- DOM の取り回し -----------------------------------------------------------
 
@@ -17,6 +18,11 @@ function el(id: string): HTMLElement {
   const found = document.getElementById(id)
   if (!found) throw new Error(`#${id} が無い`)
   return found
+}
+
+/** ページの器は無くてもデモは動くべきなので、器側の参照はこちらを使う。 */
+function maybe(id: string): HTMLElement | undefined {
+  return document.getElementById(id) ?? undefined
 }
 
 function field(id: string): HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
@@ -44,6 +50,109 @@ function log(message: string, kind: 'ok' | 'warn' | 'bad' | '' = ''): void {
   el('log').prepend(line)
 }
 
+// --- ページの器 ---------------------------------------------------------------
+
+type Theme = 'auto' | 'light' | 'dark'
+
+const THEMES: Theme[] = ['auto', 'light', 'dark']
+const THEME_ICON = { auto: 'monitor', light: 'sun', dark: 'moon' } as const
+const THEME_KEY = 'uweb-cp:theme'
+
+function readTheme(): Theme {
+  try {
+    const saved = localStorage.getItem(THEME_KEY)
+    return THEMES.find((t) => t === saved) ?? 'auto'
+  } catch {
+    return 'auto'
+  }
+}
+
+function applyTheme(theme: Theme): void {
+  if (theme === 'auto') document.documentElement.removeAttribute('data-theme')
+  else document.documentElement.setAttribute('data-theme', theme)
+
+  const toggle = maybe('theme')
+  if (toggle) toggle.innerHTML = icon(THEME_ICON[theme], 14)
+  try {
+    localStorage.setItem(THEME_KEY, theme)
+  } catch {
+    // プライベートウィンドウなど。見た目は切り替わるので続行する
+  }
+}
+
+function setUpChrome(): void {
+  const logo = maybe('logo')
+  if (logo) logo.innerHTML = icon('arrow-left-right', 15)
+
+  let theme = readTheme()
+  applyTheme(theme)
+
+  maybe('theme')?.addEventListener('click', () => {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length] ?? 'auto'
+    applyTheme(theme)
+  })
+}
+
+async function copyBlock(pre: HTMLElement, copy: HTMLElement): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(pre.innerText)
+  } catch {
+    return
+  }
+  copy.innerHTML = icon('check', 13)
+  copy.classList.add('done')
+  setTimeout(() => {
+    copy.innerHTML = icon('copy', 13)
+    copy.classList.remove('done')
+  }, 1200)
+}
+
+/** コード例をそのまま持っていけるように、各ブロックへコピーを付ける。 */
+function setUpCopyButtons(): void {
+  for (const block of document.querySelectorAll('.code')) {
+    const pre = block.querySelector('pre')
+    if (!pre) continue
+
+    const copy = document.createElement('button')
+    copy.type = 'button'
+    copy.className = 'copy'
+    copy.setAttribute('aria-label', 'コードをコピー')
+    copy.innerHTML = icon('copy', 13)
+
+    copy.addEventListener('click', () => {
+      void copyBlock(pre, copy)
+    })
+
+    block.append(copy)
+  }
+}
+
+/** install のコマンドはタブ名から導けるので、README には npm の 1 行だけ置いてある。 */
+function setUpInstallTabs(): void {
+  const install = document.querySelector('.install')
+  const pre = install?.querySelector('pre')
+  const pkg = install?.getAttribute('data-pkg')
+  if (!install || !pre || !pkg) return
+
+  const command: Record<string, string> = {
+    npm: `npm i ${pkg}`,
+    pnpm: `pnpm add ${pkg}`,
+    yarn: `yarn add ${pkg}`,
+    bun: `bun add ${pkg}`,
+  }
+
+  install.addEventListener('click', (event) => {
+    const tab = event.target instanceof Element ? event.target.closest('[data-pm]') : null
+    const manager = tab?.getAttribute('data-pm')
+    if (!manager || !command[manager]) return
+
+    for (const other of install.querySelectorAll('[data-pm]')) {
+      other.setAttribute('aria-selected', String(other === tab))
+    }
+    pre.textContent = command[manager]
+  })
+}
+
 // --- デモの骨組み -------------------------------------------------------------
 
 /**
@@ -54,7 +163,7 @@ function renderDemo(): void {
   el('demo').innerHTML = `
     <div class="duo">
       <div>
-        <p class="step">1. 送る</p>
+        <p class="step out">1. 送る</p>
         <div class="row"><span class="k">行き先</span><input id="destination" value="金沢" /></div>
         <div class="row"><span class="k">泊数</span><input id="nights" type="number" min="0" max="14" value="2" /></div>
         <div class="row"><span class="k">出発日</span><input id="date" type="date" /></div>
@@ -70,7 +179,7 @@ function renderDemo(): void {
         <pre id="preview" hidden></pre>
       </div>
       <div>
-        <p class="step">2. 受け取る</p>
+        <p class="step in">2. 受け取る</p>
         <textarea id="inbox" placeholder="AI の返信をそのまま貼り付け"></textarea>
         <div class="row">
           <button id="import" class="sub">取り込む</button>
@@ -163,6 +272,9 @@ function renderItinerary(itinerary: Itinerary): void {
 
 // --- 本体 ---------------------------------------------------------------------
 
+setUpChrome()
+setUpCopyButtons()
+setUpInstallTabs()
 renderDemo()
 
 const capabilities = detectCapabilities()
