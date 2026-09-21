@@ -3,7 +3,6 @@ import { UcpError } from './errors'
 import { type Extraction, parseResponse } from './extract'
 import { buildPrompt, type EmitTiming, type ReturnTo } from './prompt'
 import { createRid } from './rid'
-import { getProp } from './reflect'
 import { createLocalStorageStore, type PendingStore } from './store'
 import { fileDropTransport } from './transports/inbound/file-drop'
 import { pasteTransport } from './transports/inbound/paste'
@@ -35,9 +34,9 @@ export interface ExchangeOptions<T> {
   emit?: EmitTiming
   /**
    * 封筒を出したあとの戻り先の案内。
-   * 未指定なら document.title と location.origin から組む。`false` で案内しない。
+   * 文面は利用者に見えるので、出すかどうかも呼び名も実装者が決める。未指定なら何も添えない。
    */
-  returnTo?: ReturnTo | false
+  returnTo?: ReturnTo
   /** 封筒が見つからないとき、素の JSON を data とみなすことを許す。 */
   allowBareJson?: boolean
 }
@@ -72,8 +71,7 @@ export interface Exchange<T> {
 }
 
 export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
-  const { contract, ttlMs = DEFAULT_TTL_MS, locale, emit, allowBareJson } = options
-  const returnTo = options.returnTo === undefined ? detectReturnTo() : options.returnTo
+  const { contract, ttlMs = DEFAULT_TTL_MS, locale, emit, returnTo, allowBareJson } = options
   const store = options.store ?? createLocalStorageStore()
 
   const prompt = (rid: string, input: SendInput | undefined) =>
@@ -82,7 +80,7 @@ export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
       rid,
       ...(locale === undefined ? {} : { locale }),
       ...(emit === undefined ? {} : { emit }),
-      ...(returnTo === false ? {} : { returnTo }),
+      ...(returnTo === undefined ? {} : { returnTo }),
       ...(input?.context === undefined ? {} : { context: input.context }),
       ...(input?.instruction === undefined ? {} : { instruction: input.instruction }),
     })
@@ -150,22 +148,6 @@ export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
       }
     },
   }
-}
-
-/**
- * 戻り先をその場の画面から推定する。
- * アプリ作者が何も指定しなくても往復が途切れないようにするため。
- */
-function detectReturnTo(): ReturnTo | false {
-  if (typeof globalThis.document === 'undefined') return false
-
-  const title = globalThis.document.title.trim()
-  const origin = getProp(globalThis.location, 'origin')
-  const url = typeof origin === 'string' && origin.startsWith('http') ? origin : undefined
-  const name = title || (url ?? '')
-  if (!name) return false
-
-  return { name, ...(url === undefined ? {} : { url }) }
 }
 
 /**

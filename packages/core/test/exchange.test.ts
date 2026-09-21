@@ -147,19 +147,22 @@ describe('emit mode', () => {
     expect(clipboard.sent[0]).toContain('「確定」と答えたら')
   })
 
-  it('points the user back at the app it derived from the page', async () => {
-    document.title = '旅程メモ'
+  it('mentions going back only when the app asks for it', async () => {
     const clipboard = fakeOutbound('clipboard')
-    const { exchange } = make({ outbound: [clipboard], locale: 'ja' })
+    const { exchange } = make({
+      outbound: [clipboard],
+      locale: 'ja',
+      returnTo: { name: '旅程メモ' },
+    })
 
     await exchange.send()
 
     expect(clipboard.sent[0]).toContain('コピーして 旅程メモ')
   })
 
-  it('can be told not to mention going back', async () => {
+  it('says nothing about going back by default', async () => {
     const clipboard = fakeOutbound('clipboard')
-    const { exchange } = make({ outbound: [clipboard], returnTo: false })
+    const { exchange } = make({ outbound: [clipboard] })
 
     await exchange.send()
 
