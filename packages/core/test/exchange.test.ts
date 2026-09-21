@@ -136,6 +136,23 @@ describe('send', () => {
   })
 })
 
+describe('emit mode', () => {
+  it('passes the timing through to the prompt', async () => {
+    const clipboard = fakeOutbound('clipboard')
+    const { exchange } = make({ outbound: [clipboard], emit: 'on-approval', locale: 'ja' })
+
+    const result = await exchange.send()
+
+    expect(result.approvalPhrase).toBe('確定')
+    expect(clipboard.sent[0]).toContain('「確定」と答えたら')
+  })
+
+  it('says nothing about approval by default', async () => {
+    const { exchange } = make({ outbound: [fakeOutbound('clipboard')] })
+    expect((await exchange.send()).approvalPhrase).toBeUndefined()
+  })
+})
+
 describe('accept', () => {
   it('parses a reply and clears the pending request', async () => {
     const { exchange, store } = make({ outbound: [fakeOutbound('clipboard')] })

@@ -74,6 +74,37 @@ describe('buildPrompt', () => {
     expect(build({ locale: 'ja-JP' }).text).toContain('機械可読の要求:')
   })
 
+  it('tells the model to output now by default', () => {
+    const { text, approvalPhrase } = build()
+    expect(text).toContain('Reply with exactly one envelope')
+    expect(text).not.toContain('approved')
+    expect(approvalPhrase).toBeUndefined()
+  })
+
+  it('holds the envelope back until approval when asked', () => {
+    const { text, approvalPhrase } = build({ emit: 'on-approval' })
+    expect(text).toContain('Once I approve')
+    expect(text).toContain('Do not output the envelope yet')
+    expect(text).toContain('only after I reply "approved"')
+    expect(approvalPhrase).toBe('approved')
+  })
+
+  it('keeps rid stable across turns in on-approval mode', () => {
+    expect(build({ emit: 'on-approval' }).text).toContain('however many turns later')
+  })
+
+  it('localises the approval phrase', () => {
+    const { text, approvalPhrase } = build({ emit: 'on-approval', locale: 'ja' })
+    expect(approvalPhrase).toBe('確定')
+    expect(text).toContain('「確定」と答えたら')
+  })
+
+  it('keeps the shared rules in both modes', () => {
+    for (const emit of ['now', 'on-approval'] as const) {
+      expect(build({ emit }).text).toContain('Make `data` conform to the `schema`')
+    }
+  })
+
   it('reports its own length', () => {
     const built = build()
     expect(built.length).toBe(built.text.length)

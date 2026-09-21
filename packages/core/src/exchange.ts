@@ -1,7 +1,7 @@
 import { detectCapabilities, recommendTransports } from './capabilities'
 import { UcpError } from './errors'
 import { type Extraction, parseResponse } from './extract'
-import { buildPrompt } from './prompt'
+import { buildPrompt, type EmitTiming } from './prompt'
 import { createRid } from './rid'
 import { createLocalStorageStore, type PendingStore } from './store'
 import { fileDropTransport } from './transports/inbound/file-drop'
@@ -30,6 +30,8 @@ export interface ExchangeOptions<T> {
   ttlMs?: number
   /** buildPrompt へそのまま渡す。 */
   locale?: string
+  /** 封筒を出させる時機。既定は `now`。 */
+  emit?: EmitTiming
   /** 封筒が見つからないとき、素の JSON を data とみなすことを許す。 */
   allowBareJson?: boolean
 }
@@ -44,6 +46,8 @@ export interface SendResult {
   /** 実際に使われた OutboundTransport の id。 */
   via: OutboundTransportId
   prompt: string
+  /** `emit: 'on-approval'` のとき、利用者が AI に言うべき合図。 */
+  approvalPhrase?: string
 }
 
 /** 1 契約に対する送受信のまとまり。ライブラリ利用者が普段触るのはこれだけ。 */
@@ -62,7 +66,7 @@ export interface Exchange<T> {
 }
 
 export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
-  const { contract, ttlMs = DEFAULT_TTL_MS, locale, allowBareJson } = options
+  const { contract, ttlMs = DEFAULT_TTL_MS, locale, emit, allowBareJson } = options
   const store = options.store ?? createLocalStorageStore()
 
   const prompt = (rid: string, input: SendInput | undefined) =>
@@ -70,6 +74,7 @@ export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
       contract,
       rid,
       ...(locale === undefined ? {} : { locale }),
+      ...(emit === undefined ? {} : { emit }),
       ...(input?.context === undefined ? {} : { context: input.context }),
       ...(input?.instruction === undefined ? {} : { instruction: input.instruction }),
     })
@@ -98,7 +103,12 @@ export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
 
       try {
         const via = await deliver(transports, built.text)
-        return { rid, via, prompt: built.text }
+        return {
+          rid,
+          via,
+          prompt: built.text,
+          ...(built.approvalPhrase === undefined ? {} : { approvalPhrase: built.approvalPhrase }),
+        }
       } catch (error) {
         await store.take(rid)
         throw error
