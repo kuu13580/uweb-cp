@@ -12,9 +12,9 @@ const BASE = process.env.UWEB_CP_BASE ?? '/'
 export const SHARE_TARGET = { action: BASE }
 
 const manifest = {
-  name: 'µweb-cp 旅行日程デモ',
-  short_name: 'µweb-cp trip',
-  description: 'チャット AI と旅行日程を往復させる検証用 PWA',
+  name: 'µweb-cp デモ',
+  short_name: 'µweb-cp',
+  description: 'チャット AI とアイデアの一覧を往復させるデモ',
   start_url: BASE,
   scope: BASE,
   display: 'standalone',

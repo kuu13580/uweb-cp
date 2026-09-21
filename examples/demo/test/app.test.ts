@@ -1,22 +1,19 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test'
 
-const reply = (destination: string) =>
-  `作ってみました。\n\n\`\`\`json ucp\n${JSON.stringify({
+const reply = (topic: string) =>
+  `挙げてみました。\n\n\`\`\`json ucp\n${JSON.stringify({
     ucp: 1,
     kind: 'response',
-    contract: 'trip.itinerary@1',
+    contract: 'idea.list@1',
     data: {
-      destination,
-      summary: '和菓子と古い街並み',
-      days: [
+      topic,
+      ideas: [
         {
-          day: 1,
-          title: '到着とひがし茶屋街',
-          stops: [
-            { time: '14:00', place: '金沢駅' },
-            { time: '15:30', place: 'ひがし茶屋街', note: '和菓子屋を 2 軒' },
-          ],
+          title: '未更新ページの棚卸しリマインド',
+          why: '古い情報が残り続けるのが一番の害',
+          effort: 'medium',
         },
+        { title: 'ページ冒頭に「最終確認者」を出す', effort: 'small' },
       ],
     },
   })}\n\`\`\`\n\nいかがでしょう。`
@@ -35,7 +32,7 @@ const paste = (text: string) => {
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 
-describe('travel-pwa', () => {
+describe('demo', () => {
   beforeAll(async () => {
     mountDemoRoot()
     await import('../src/main')
@@ -56,20 +53,27 @@ describe('travel-pwa', () => {
 
     const preview = document.getElementById('preview')
     expect(preview?.hidden).toBe(false)
-    expect(preview?.textContent).toContain('和菓子と古い街並み')
+    expect(preview?.textContent).toContain('チーム内 Wiki に足す機能')
     expect(preview?.textContent).toContain('"kind": "request"')
   })
 
-  it('imports a pasted reply into the itinerary view', async () => {
-    paste(reply('金沢'))
+  it('imports a pasted reply into the list view', async () => {
+    paste(reply('チーム内 Wiki に足す機能'))
     await settle()
 
     const result = document.getElementById('result')
     expect(document.getElementById('result-card')?.hidden).toBe(false)
-    expect(result?.textContent).toContain('金沢')
-    expect(result?.textContent).toContain('Day 1')
-    expect(result?.textContent).toContain('ひがし茶屋街')
-    expect(result?.textContent).toContain('和菓子屋を 2 軒')
+    expect(result?.textContent).toContain('チーム内 Wiki に足す機能')
+    expect(result?.textContent).toContain('未更新ページの棚卸しリマインド')
+    expect(result?.textContent).toContain('古い情報が残り続けるのが一番の害')
+  })
+
+  it('shows the effort enum as a badge', async () => {
+    paste(reply('お題'))
+    await settle()
+
+    expect(document.querySelectorAll('.effort.medium')).toHaveLength(1)
+    expect(document.querySelectorAll('.effort.small')).toHaveLength(1)
   })
 
   it('reports a reply it cannot use instead of failing silently', async () => {
@@ -80,12 +84,13 @@ describe('travel-pwa', () => {
   })
 
   it('rejects an envelope whose data breaks the contract', async () => {
+    // effort が enum から外れている。UI のバッジに直結するので通してはいけない
     paste(
       JSON.stringify({
         ucp: 1,
         kind: 'response',
-        contract: 'trip.itinerary@1',
-        data: { days: [] },
+        contract: 'idea.list@1',
+        data: { topic: 'お題', ideas: [{ title: 'x', effort: 'HUGE' }] },
       }),
     )
     await settle()

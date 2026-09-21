@@ -9,7 +9,7 @@ import {
   type SendInput,
   UcpError,
 } from 'uweb-cp'
-import { type Itinerary, itineraryContract } from './contract'
+import { type IdeaList, ideaListContract } from './contract'
 import { icon } from './icons'
 
 // --- DOM の取り回し -----------------------------------------------------------
@@ -165,10 +165,10 @@ function renderDemo(): void {
       <div>
         <p class="step out">1 送る</p>
         <div class="row">
-          <input id="destination" value="金沢" aria-label="行き先" />
+          <input id="topic" value="チーム内 Wiki に足す機能" aria-label="お題" />
           <button id="send">AI に送る</button>
         </div>
-        <p class="hint">共有シートかクリップボードで送り出します。</p>
+        <p class="hint">共有シートかクリップボードで送り出します。AI と相談して、決まったら「確定」と送ってください。</p>
       </div>
       <div>
         <p class="step in">2 受け取る</p>
@@ -185,13 +185,12 @@ function renderDemo(): void {
     <details>
       <summary>細かく指定する</summary>
       <div class="more">
-        <div class="row"><span class="k">泊数</span><input id="nights" type="number" min="0" max="14" value="2" /></div>
-        <div class="row"><span class="k">出発日</span><input id="date" type="date" /></div>
+        <div class="row"><span class="k">件数</span><input id="count" type="number" min="3" max="20" value="8" /></div>
         <div class="row"><span class="k">時機</span><select id="emit">
-          <option value="now">その場で出す (now)</option>
           <option value="on-approval">承認してから出す (on-approval)</option>
+          <option value="now">その場で出す (now)</option>
         </select></div>
-        <textarea id="instruction">和菓子と古い街並みを中心に、移動は徒歩とバスで。</textarea>
+        <textarea id="instruction">実装が重すぎないものを優先してください。</textarea>
         <div class="row"><button id="toggle-preview" class="sub">送るプロンプトを見る</button></div>
         <pre id="preview" hidden></pre>
         <div id="drop">テキストファイルをドロップ</div>
@@ -232,49 +231,49 @@ function renderCapabilities(capabilities: Capabilities): void {
   )
 }
 
+const EFFORT: Record<IdeaList['ideas'][number]['effort'], string> = {
+  small: '小',
+  medium: '中',
+  large: '大',
+}
+
 /** data は LLM 由来なので、文字列は必ず textContent として置く。 */
-function renderItinerary(itinerary: Itinerary): void {
+function renderIdeas(list: IdeaList): void {
   const heading = document.createElement('p')
-  const destination = document.createElement('strong')
-  destination.textContent = itinerary.destination
-  heading.append(destination)
-  if (itinerary.summary) {
-    const summary = document.createElement('span')
-    summary.className = 'note'
-    summary.textContent = ` — ${itinerary.summary}`
-    heading.append(summary)
-  }
+  const topic = document.createElement('strong')
+  topic.textContent = list.topic
+  const count = document.createElement('span')
+  count.className = 'note'
+  count.textContent = ` — ${list.ideas.length} 件`
+  heading.append(topic, count)
 
-  const days = itinerary.days.map((day) => {
-    const section = document.createElement('div')
-    section.className = 'day'
+  const items = list.ideas.map((entry) => {
+    const item = document.createElement('li')
 
-    const title = document.createElement('h3')
-    title.textContent = `Day ${day.day}${day.date ? ` (${day.date})` : ''} — ${day.title}`
+    const badge = document.createElement('span')
+    badge.className = `effort ${entry.effort}`
+    badge.textContent = EFFORT[entry.effort]
 
-    const list = document.createElement('ul')
-    for (const stop of day.stops) {
-      const item = document.createElement('li')
-      if (stop.time) {
-        const time = document.createElement('time')
-        time.textContent = stop.time
-        item.append(time)
-      }
-      item.append(stop.place)
-      if (stop.note) {
-        const note = document.createElement('span')
-        note.className = 'note'
-        note.textContent = ` — ${stop.note}`
-        item.append(note)
-      }
-      list.append(item)
+    const title = document.createElement('span')
+    title.className = 'title'
+    title.textContent = entry.title
+
+    item.append(badge, title)
+
+    if (entry.why) {
+      const why = document.createElement('span')
+      why.className = 'note'
+      why.textContent = ` — ${entry.why}`
+      item.append(why)
     }
-
-    section.append(title, list)
-    return section
+    return item
   })
 
-  el('result').replaceChildren(heading, ...days)
+  const listing = document.createElement('ul')
+  listing.className = 'ideas'
+  listing.append(...items)
+
+  el('result').replaceChildren(heading, listing)
   el('result-card').hidden = false
 }
 
@@ -292,7 +291,7 @@ log(`送信は ${recommendTransports(capabilities).outbound[0] ?? 'なし'} を�
 // 戻り先の文面はアプリの UX なので、ライブラリ任せにせずここで決める
 const store = createLocalStorageStore()
 const base = {
-  contract: itineraryContract,
+  contract: ideaListContract,
   locale: 'ja',
   store,
   returnTo: { name: 'uweb-cp のデモ', url: new URL(import.meta.env.BASE_URL, location.href).href },
@@ -307,14 +306,12 @@ const selected = () => exchanges[field('emit').value === 'on-approval' ? 'on-app
 
 function currentInput(): SendInput {
   const instruction = field('instruction').value.trim()
-  const departureDate = field('date').value
 
   return {
     ...(instruction ? { instruction } : {}),
     context: {
-      destination: field('destination').value,
-      nights: Number(field('nights').value),
-      ...(departureDate ? { departureDate } : {}),
+      topic: field('topic').value,
+      count: Number(field('count').value),
     },
   }
 }
@@ -337,12 +334,12 @@ async function sendNow(): Promise<void> {
   }
 }
 
-function handleResult(result: Result<Extraction<Itinerary>>): void {
+function handleResult(result: Result<Extraction<IdeaList>>): void {
   if (result.ok) {
     const { envelope, via, issues } = result.value
     log(`取り込んだ: via=${via} rid=${envelope.rid ?? 'なし'}`, 'ok')
     for (const issue of issues) log(`注意: ${issue.message}`, 'warn')
-    renderItinerary(envelope.data)
+    renderIdeas(envelope.data)
     return
   }
 
@@ -377,7 +374,7 @@ async function pullFromClipboard(): Promise<void> {
 }
 
 async function nudgeIfWaiting(): Promise<void> {
-  const pending = await store.latest(itineraryContract.ref)
+  const pending = await store.latest(ideaListContract.ref)
   if (!pending || !el('result-card').hidden) return
   field('inbox').focus()
   log('戻ってきました。返信をここに貼り付けてください', 'warn')

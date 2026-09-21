@@ -29,10 +29,10 @@ vp test run        # テスト
 ## 実機検証
 
 共有シート・クリップボード・Web Share Target・PWA インストールは happy-dom では確かめられない。
-[examples/travel-pwa](./examples/travel-pwa) に検証用アプリと手順のチェックリストがある。
+[examples/demo](./examples/demo) に検証用アプリと手順のチェックリストがある。
 
 ```sh
-cd examples/travel-pwa
+cd examples/demo
 pnpm run tunnel    # ビルド → preview → HTTPS トンネル → URL と QR
 ```
 

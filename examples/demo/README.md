@@ -1,6 +1,7 @@
-# travel-pwa
+# demo
 
-µweb-cp の実機検証用 PWA。旅行の条件をチャット AI に送り、返ってきた日程表を構造化データとして取り込む。
+µweb-cp の公開デモ兼、実機検証用 PWA。お題をチャット AI に送り、列挙してもらったアイデアを構造化データとして取り込む。
+プロジェクトの表紙（GitHub Pages）も兼ねていて、本文は root の README.md から生成している。
 
 `packages/core` のテストは happy-dom 上で動くため、**共有シート・クリップボード・Share Target・PWA インストールだけは本物のブラウザでしか確かめられない**。このアプリはそこを見るためにある。
 
@@ -9,7 +10,7 @@
 ```sh
 pnpm install
 vp run -r build                             # 先に packages/core を 1 度ビルドする
-vp run -F @uweb-cp/example-travel-pwa dev   # → http://localhost:5173
+vp run -F @uweb-cp/demo dev   # → http://localhost:5173
 ```
 
 先にビルドが要るのは、`vite.config.ts` が `uweb-cp/transports` から manifest を組み立てるため。
@@ -81,6 +82,7 @@ iOS/Safari では 8 は動かない（Web Share Target 非対応）。そこは 
 | ファイル                 | 役割                                                                                            |
 | ------------------------ | ----------------------------------------------------------------------------------------------- |
 | `src/contract.ts`        | zod ひとつから `jsonSchema`（AI への説明）と `validate`（受信の関門）を出す                     |
+| `plugins/readme.ts`      | root の README.md をページ本文に変換し、マーカーの位置にデモを差し込む                          |
 | `src/main.ts`            | `createExchange` に繋ぐだけ。フレームワーク無しの素の DOM                                       |
 | `vite.config.ts`         | manifest を組み立てる。`share_target` は `shareTargetManifest()` から出すので受信実装とずれない |
 | `scripts/make-icons.mjs` | インストール条件を満たすアイコンをその場で生成（画像をリポジトリに置かないため）                |
