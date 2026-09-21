@@ -1,3 +1,4 @@
+export { readClipboardText } from './inbound/clipboard'
 export { fileDropTransport } from './inbound/file-drop'
 export { pasteTransport } from './inbound/paste'
 export {

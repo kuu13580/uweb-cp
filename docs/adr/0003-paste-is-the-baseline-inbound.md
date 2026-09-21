@@ -24,6 +24,11 @@ iOS/Safari・Firefox では使えない。さらに **PWA がインストール�
 `navigator.clipboard.readText()` はユーザー操作と権限の制約が強く、暗黙の読み取りに使えない。
 `paste` イベントなら利用者の貼り付け操作そのものを拾えるため、権限も要らない。
 
+ただし `readText()` 自体を捨てるわけではない。**購読ではなく引き取り**として、
+利用者の操作の中からだけ呼べる形 (`Exchange.pull()` / `readClipboardText()`) で提供する。
+paste イベントが飛んでこない環境の逃げ道になり、`detectCapabilities().clipboardRead` が
+その可否を返す。いつ呼ぶか・ボタンを出すかは実装者の領分なので、既定の経路には入れない。
+
 ## 結果
 
 - アプリ側 UI は「貼り付け先」を必ず用意する必要がある。

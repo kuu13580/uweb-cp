@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
+import { UcpError } from '../src/errors'
+import { readClipboardText } from '../src/transports/inbound/clipboard'
 import { fileDropTransport } from '../src/transports/inbound/file-drop'
 import { pasteTransport } from '../src/transports/inbound/paste'
 import { shareTargetManifest, shareTargetTransport } from '../src/transports/inbound/share-target'
@@ -16,6 +18,38 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+const codeOf = async (run: () => Promise<unknown>) => {
+  try {
+    await run()
+  } catch (error) {
+    return error instanceof UcpError ? error.code : 'not-a-ucp-error'
+  }
+  return 'no-throw'
+}
+
+describe('readClipboardText', () => {
+  it('returns what the clipboard holds', async () => {
+    vi.stubGlobal('navigator', { clipboard: { readText: () => Promise.resolve('hello') } })
+    expect(await readClipboardText()).toBe('hello')
+  })
+
+  it('fails when the api is missing', async () => {
+    vi.stubGlobal('navigator', {})
+    expect(await codeOf(readClipboardText)).toBe('transport-unavailable')
+  })
+
+  it('separates a refusal from an unsupported environment', async () => {
+    const denied = Object.assign(new Error('denied'), { name: 'NotAllowedError' })
+    vi.stubGlobal('navigator', { clipboard: { readText: () => Promise.reject(denied) } })
+    expect(await codeOf(readClipboardText)).toBe('transport-aborted')
+  })
+
+  it('reports any other failure as unavailable', async () => {
+    vi.stubGlobal('navigator', { clipboard: { readText: () => Promise.reject(new Error('x')) } })
+    expect(await codeOf(readClipboardText)).toBe('transport-unavailable')
+  })
 })
 
 describe('pasteTransport', () => {

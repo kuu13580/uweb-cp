@@ -4,6 +4,7 @@ import { type Extraction, parseResponse } from './extract'
 import { buildPrompt, type EmitTiming, type ReturnTo } from './prompt'
 import { createRid } from './rid'
 import { createLocalStorageStore, type PendingStore } from './store'
+import { readClipboardText } from './transports/inbound/clipboard'
 import { fileDropTransport } from './transports/inbound/file-drop'
 import { pasteTransport } from './transports/inbound/paste'
 import { shareTargetTransport } from './transports/inbound/share-target'
@@ -66,6 +67,12 @@ export interface Exchange<T> {
   send(input?: SendInput): Promise<SendResult>
   /** 任意のテキストを受け取って検証済みデータにする。 */
   accept(text: string): Promise<Result<Extraction<T>>>
+  /**
+   * クリップボードを読んで取り込む。
+   * 利用者の操作 (ボタン押下など) の中から呼ぶこと。環境によっては権限確認が出る。
+   * 読めなかったときは UcpError を投げる (拒否は `transport-aborted`)。
+   */
+  pull(): Promise<Result<Extraction<T>>>
   /** inbound transport を購読する。解除関数を返す。 */
   listen(onResult: (result: Result<Extraction<T>>) => void): () => void
 }
@@ -134,6 +141,10 @@ export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
         if (rid !== undefined) await store.take(rid)
       }
       return result
+    },
+
+    async pull() {
+      return this.accept(await readClipboardText())
     },
 
     listen(onResult) {

@@ -219,6 +219,30 @@ describe('accept', () => {
   })
 })
 
+describe('pull', () => {
+  it('takes what the clipboard holds and imports it', async () => {
+    const { exchange } = make({ outbound: [fakeOutbound('clipboard')] })
+    const { rid } = await exchange.send()
+    vi.stubGlobal('navigator', { clipboard: { readText: () => Promise.resolve(reply(rid, 4)) } })
+
+    const result = await exchange.pull()
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.value.envelope.data).toEqual({ days: 4 })
+    vi.unstubAllGlobals()
+  })
+
+  it('surfaces a refused read instead of returning a Result', async () => {
+    const denied = Object.assign(new Error('denied'), { name: 'NotAllowedError' })
+    vi.stubGlobal('navigator', { clipboard: { readText: () => Promise.reject(denied) } })
+    const { exchange } = make()
+
+    await expect(exchange.pull()).rejects.toThrow(UcpError)
+    vi.unstubAllGlobals()
+  })
+})
+
 describe('listen', () => {
   it('reports what an inbound transport delivers', async () => {
     const inbound = fakeInbound()
