@@ -58,8 +58,14 @@ chmod +x ~/.local/bin/cloudflared
 ```
 
 > **URL は起動のたびに変わる。**オリジンが変わると、インストール済み PWA も Share Target の登録も無効になる。
-> 8・9 を繰り返し試すなら、`dist/` を静的ホスティングに上げて URL を固定したほうが早い。
-> サブパス配下に置く場合は `vite.config.ts` の `base` と `SHARE_TARGET.action` を揃えること。
+> 8・9 を繰り返し試すなら、固定 URL の GitHub Pages 版を使うほうが早い。
+
+サブパス配下に配信する場合は `UWEB_CP_BASE` を渡す。`base` / `start_url` / `scope` /
+`share_target.action` / Service Worker の登録先がまとめて追従する。
+
+```sh
+UWEB_CP_BASE=/uweb-cp/ vp run -r build
+```
 
 トンネル越しの Host は Vite が既定で 403 にするため、`vite.config.ts` の `allowedHosts` で検証用ドメインだけ通してある。
 

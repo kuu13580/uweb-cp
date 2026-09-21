@@ -134,7 +134,7 @@ const base = {
   contract: itineraryContract,
   locale: 'ja',
   store,
-  returnTo: { name: '旅行日程デモ', url: globalThis.location.origin },
+  returnTo: { name: '旅行日程デモ', url: new URL(import.meta.env.BASE_URL, location.href).href },
 } as const
 
 const exchanges = {
@@ -272,7 +272,7 @@ for (const type of ['dragleave', 'drop'] as const) {
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker
-    .register('/sw.js')
+    .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
     .then(() => log('Service Worker を登録した (インストール条件)'))
     .catch(() => log('Service Worker を登録できなかった', 'warn'))
 }
