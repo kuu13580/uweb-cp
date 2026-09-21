@@ -1,6 +1,10 @@
-# µweb-cp (uweb-cp)
+# uweb-cp
 
-**Micro Web Context Provider** — Web 標準だけで、アプリと「利用者が普段使っているチャット AI」の間を構造化データで往復させる TypeScript ライブラリ。
+[![CI](https://github.com/kuu13580/uweb-cp/actions/workflows/ci.yml/badge.svg)](https://github.com/kuu13580/uweb-cp/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-2a3a6e)](./LICENSE)
+[![deps](https://img.shields.io/badge/runtime%20deps-0-2a3a6e)](./packages/core/package.json)
+
+**µweb-cp — Micro Web Context Provider.** Web 標準だけで、アプリと「利用者が普段使っているチャット AI」の間を構造化データで往復させる TypeScript ライブラリ。
 
 サーバも API キーも常駐プロセスも不要。運び手は利用者自身（共有シート / コピー&ペースト）。
 
@@ -39,6 +43,17 @@ exchange.listen((result) => {
   if (result.ok) importItinerary(result.value.envelope.data)
 })
 ```
+
+## 試してみる
+
+この端末で実際に往復させられます。条件を送って AI に渡し、返ってきた返信を貼り付けると、
+検証済みの構造化データとして取り込まれます。
+
+<!-- demo:start -->
+
+→ **[ライブデモを開く](https://kuu13580.github.io/uweb-cp/)**（スマホでも動きます）
+
+<!-- demo:end -->
 
 ## 設計の軸
 

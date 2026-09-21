@@ -4,38 +4,65 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#1c2a5e" />
+    <meta
+      name="description"
+      content="Web 標準だけで、アプリとチャット AI の間を構造化データで往復させる TypeScript ライブラリ。"
+    />
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <link rel="icon" href="%BASE_URL%icon-192.png" />
     <link rel="apple-touch-icon" href="%BASE_URL%icon-192.png" />
-    <title>µweb-cp 旅行日程デモ</title>
+    <title>uweb-cp</title>
     <style>
+      /* 本文に Web フォントを使わない。README らしさと初期表示の速さの両方のため。 */
       :root {
-        --ground: #f5f6f8;
-        --surface: #fff;
-        --surface-2: #eceff4;
-        --ink: #13171e;
-        --muted: #616b7c;
-        --line: #dfe3ea;
-        --accent: #1c2a5e;
-        --ok: #0d7a63;
-        --warn: #9a6412;
+        --bg: #fcfcfd;
+        --ink: #1a1d23;
+        --dim: #55606f;
+        --line: #dfe2e8;
+        --hair: #eceef2;
+        --code-bg: #f3f4f7;
+        --link: #1a4fb8;
+        --navy: #1c2a5e;
+        --ok: #1a6b4f;
         --bad: #a3282d;
-        color-scheme: light dark;
+        --warn: #8a5a12;
+        --field: #fff;
+
+        --sys:
+          system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic UI', sans-serif;
+        --mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, monospace;
       }
 
       @media (prefers-color-scheme: dark) {
-        :root {
-          --ground: #0f1117;
-          --surface: #171b22;
-          --surface-2: #1e232b;
-          --ink: #e8ebf1;
-          --muted: #949daf;
-          --line: #262c36;
-          --accent: #8aa1f7;
-          --ok: #45c2a4;
-          --warn: #d69f52;
+        :root:not([data-theme='light']) {
+          --bg: #14171c;
+          --ink: #e4e8ee;
+          --dim: #949daa;
+          --line: #2c323b;
+          --hair: #23282f;
+          --code-bg: #1b1f25;
+          --link: #7ea3f0;
+          --navy: #b9c9f5;
+          --ok: #45b894;
           --bad: #e8797d;
+          --warn: #d9a45a;
+          --field: #191d23;
         }
+      }
+
+      :root[data-theme='dark'] {
+        --bg: #14171c;
+        --ink: #e4e8ee;
+        --dim: #949daa;
+        --line: #2c323b;
+        --hair: #23282f;
+        --code-bg: #1b1f25;
+        --link: #7ea3f0;
+        --navy: #b9c9f5;
+        --ok: #45b894;
+        --bad: #e8797d;
+        --warn: #d9a45a;
+        --field: #191d23;
       }
 
       * {
@@ -44,283 +71,398 @@
 
       body {
         margin: 0;
-        padding: max(16px, env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
-        background: var(--ground);
+        padding: max(20px, env(safe-area-inset-top)) 16px calc(56px + env(safe-area-inset-bottom));
+        background: var(--bg);
         color: var(--ink);
-        font:
-          15px/1.7 system-ui,
-          -apple-system,
-          'Hiragino Sans',
-          'Noto Sans JP',
-          sans-serif;
+        font-family: var(--sys);
+        font-size: 15px;
+        line-height: 1.9;
+        -webkit-text-size-adjust: 100%;
       }
 
       main {
-        max-width: 720px;
+        max-width: 760px;
         margin: 0 auto;
+      }
+
+      /* ---- README から来る要素 ---- */
+
+      h1 {
+        font-family: var(--mono);
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--navy);
+        margin: 0 0 14px;
+      }
+
+      h2 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 38px 0 12px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--hair);
+        scroll-margin-top: 16px;
+      }
+
+      h2 .anchor {
+        font-family: var(--mono);
+        font-weight: 400;
+        color: var(--line);
+        text-decoration: none;
+        margin-right: 7px;
+      }
+
+      h2:hover .anchor {
+        color: var(--dim);
+      }
+
+      p {
+        margin: 0 0 13px;
+        max-width: 64ch;
+      }
+
+      a {
+        color: var(--link);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      strong {
+        font-weight: 600;
+      }
+
+      /* バッジ列 */
+      p:has(> a > img) {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        line-height: 1;
+        margin-bottom: 18px;
+      }
+
+      img {
+        max-width: 100%;
+        vertical-align: middle;
+      }
+
+      pre {
+        margin: 0 0 14px;
+        padding: 13px 15px;
+        background: var(--code-bg);
+        border: 1px solid var(--hair);
+        border-radius: 4px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.75;
+      }
+
+      code {
+        font-family: var(--mono);
+        font-size: 0.88em;
+        background: var(--code-bg);
+        border-radius: 3px;
+        padding: 1px 4px;
+      }
+
+      pre code {
+        background: none;
+        padding: 0;
+        font-size: 1em;
+      }
+
+      ul {
+        margin: 0 0 14px;
+        padding-left: 22px;
+      }
+
+      li {
+        margin-bottom: 3px;
+        max-width: 62ch;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13.5px;
+        margin: 0 0 14px;
+        display: block;
+        overflow-x: auto;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 8px 14px 8px 0;
+        border-bottom: 1px solid var(--hair);
+        vertical-align: top;
+      }
+
+      /* ---- デモ（README のマーカー位置に差し込まれる） ---- */
+
+      .demo {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 16px;
+        margin: 0 0 14px;
+      }
+
+      .duo {
         display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 18px;
       }
 
-      h1 {
-        font-size: 19px;
-        margin: 0;
-        letter-spacing: -0.01em;
-      }
-      h2 {
-        font-size: 13px;
-        margin: 0 0 10px;
-        color: var(--muted);
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-      }
-      p {
+      .step {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        color: var(--dim);
         margin: 0 0 10px;
       }
 
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 16px;
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 7px;
       }
 
-      .grid {
-        display: grid;
-        gap: 10px;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      }
-
-      label {
-        display: grid;
-        gap: 4px;
+      .row > .k {
         font-size: 12px;
-        color: var(--muted);
+        color: var(--dim);
+        width: 52px;
+        flex: none;
       }
 
       input,
       textarea,
       select,
       button {
-        font: inherit;
+        font-family: inherit;
+        font-size: 13px;
         color: inherit;
-        border-radius: 8px;
         border: 1px solid var(--line);
-        background: var(--ground);
-        padding: 9px 11px;
+        border-radius: 3px;
+        background: var(--field);
+        padding: 5px 8px;
+        min-width: 0;
+      }
+
+      input,
+      select {
+        flex: 1;
       }
 
       textarea {
         width: 100%;
-        min-height: 120px;
+        min-height: 92px;
         resize: vertical;
-        font-family: ui-monospace, monospace;
-        font-size: 12.5px;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.7;
       }
 
       button {
-        background: var(--accent);
-        color: var(--ground);
-        border-color: transparent;
-        font-weight: 600;
         cursor: pointer;
+        background: var(--navy);
+        border-color: var(--navy);
+        color: var(--bg);
+        font-weight: 500;
+        padding: 5px 13px;
       }
 
-      button.ghost {
+      button.sub {
         background: transparent;
-        color: var(--ink);
         border-color: var(--line);
+        color: var(--ink);
         font-weight: 400;
       }
+
       button:disabled {
-        opacity: 0.5;
+        opacity: 0.45;
         cursor: not-allowed;
       }
 
-      .row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
-        margin-top: 12px;
-      }
-
-      .caps {
-        display: grid;
-        gap: 4px;
-        font-family: ui-monospace, monospace;
+      .hint {
         font-size: 12px;
-      }
-      .caps div {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        border-bottom: 1px solid var(--line);
-        padding: 3px 0;
-      }
-      .caps span:last-child {
-        color: var(--muted);
-      }
-      .yes {
-        color: var(--ok) !important;
-      }
-      .no {
-        color: var(--muted) !important;
+        color: var(--dim);
+        margin: 8px 0 0;
       }
 
-      #drop {
-        border: 1px dashed var(--line);
-        border-radius: 10px;
-        padding: 10px;
-        text-align: center;
-        font-size: 12.5px;
-        color: var(--muted);
-        margin-top: 10px;
-      }
-      #drop.over {
-        border-color: var(--accent);
-        color: var(--ink);
+      #instruction {
+        min-height: 56px;
       }
 
-      #log {
-        font-family: ui-monospace, monospace;
-        font-size: 12px;
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        display: grid;
-        gap: 4px;
-        max-height: 220px;
-        overflow-y: auto;
-      }
-      #log li {
-        border-left: 2px solid var(--line);
-        padding-left: 9px;
-        color: var(--muted);
-      }
-      #log li.ok {
-        border-color: var(--ok);
-        color: var(--ink);
-      }
-      #log li.warn {
-        border-color: var(--warn);
-      }
-      #log li.bad {
-        border-color: var(--bad);
-      }
-
-      pre {
-        background: var(--surface-2);
-        border-radius: 8px;
-        padding: 12px;
-        overflow-x: auto;
-        font-size: 12px;
-        margin: 0;
+      #preview {
+        margin-top: 9px;
+        max-height: 280px;
+        overflow: auto;
         white-space: pre-wrap;
         word-break: break-word;
       }
 
-      .day {
-        border-top: 1px solid var(--line);
-        padding-top: 10px;
-        margin-top: 10px;
+      /* ---- 取り込んだ結果 ---- */
+
+      #result-card {
+        border-top: 1px solid var(--hair);
+        margin-top: 16px;
+        padding-top: 14px;
       }
-      .day:first-child {
+
+      .day {
+        border-top: 1px solid var(--hair);
+        margin-top: 10px;
+        padding-top: 10px;
+      }
+
+      .day:first-of-type {
         border-top: 0;
         margin-top: 0;
         padding-top: 0;
       }
+
       .day h3 {
-        font-size: 14px;
-        margin: 0 0 6px;
+        font-size: 13.5px;
+        margin: 0 0 5px;
+        font-weight: 600;
       }
+
       .day ul {
         margin: 0;
-        padding-left: 18px;
+        padding-left: 20px;
       }
+
       .day time {
-        font-family: ui-monospace, monospace;
+        font-family: var(--mono);
         font-size: 12px;
-        color: var(--muted);
-        margin-right: 6px;
+        color: var(--dim);
+        margin-right: 7px;
       }
+
       .note {
-        color: var(--muted);
+        color: var(--dim);
         font-size: 12.5px;
+      }
+
+      /* ---- 診断（既定では畳む） ---- */
+
+      details {
+        margin-top: 14px;
+        border-top: 1px solid var(--hair);
+        padding-top: 10px;
+      }
+
+      summary {
+        font-size: 12.5px;
+        color: var(--dim);
+        cursor: pointer;
+      }
+
+      .caps {
+        display: grid;
+        gap: 2px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        margin-top: 10px;
+      }
+
+      .caps div {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid var(--hair);
+        padding: 2px 0;
+      }
+
+      .caps span:last-child {
+        color: var(--dim);
+      }
+
+      .yes {
+        color: var(--ok) !important;
+      }
+
+      #log {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        display: grid;
+        gap: 3px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      #log li {
+        color: var(--dim);
+        border-left: 2px solid var(--hair);
+        padding-left: 9px;
+        margin: 0;
+        max-width: none;
+      }
+
+      #log li.ok {
+        border-color: var(--ok);
+        color: var(--ink);
+      }
+
+      #log li.warn {
+        border-color: var(--warn);
+      }
+
+      #log li.bad {
+        border-color: var(--bad);
+      }
+
+      #drop {
+        border: 1px dashed var(--line);
+        border-radius: 3px;
+        padding: 7px;
+        text-align: center;
+        font-size: 11.5px;
+        color: var(--dim);
+        margin-top: 7px;
+      }
+
+      #drop.over {
+        border-color: var(--navy);
+        color: var(--ink);
       }
 
       [hidden] {
         display: none !important;
       }
+
+      @media (max-width: 620px) {
+        .duo {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        /* 2 列の対比表は、狭いと 1 列目が潰れて読めなくなるので縦に積む */
+        tbody tr {
+          display: block;
+          border-bottom: 1px solid var(--hair);
+          padding: 7px 0;
+        }
+
+        tbody td {
+          display: block;
+          border: 0;
+          padding: 0;
+        }
+
+        tbody td:first-child {
+          margin-bottom: 1px;
+        }
+      }
     </style>
   </head>
   <body>
-    <main>
-      <header>
-        <h1>µweb-cp 旅行日程デモ</h1>
-        <p class="note">
-          条件を入れて AI に送り、返信をこの画面に貼り付けると日程表として取り込まれます。
-        </p>
-      </header>
-
-      <section class="card">
-        <h2>この端末で使える経路</h2>
-        <div class="caps" id="caps"></div>
-      </section>
-
-      <section class="card">
-        <h2>1. 送る</h2>
-        <div class="grid">
-          <label>行き先<input id="destination" value="金沢" /></label>
-          <label>泊数<input id="nights" type="number" min="0" max="14" value="2" /></label>
-          <label>出発日<input id="date" type="date" /></label>
-        </div>
-        <label style="margin-top: 10px"
-          >依頼したいこと<textarea id="instruction" style="min-height: 64px">
-和菓子と古い街並みを中心に、移動は徒歩とバスで。</textarea>
-        </label>
-        <label style="margin-top: 10px"
-          >封筒を出させる時機
-          <select id="emit">
-            <option value="now">その場で出す (now)</option>
-            <option value="on-approval">承認してから出す (on-approval)</option>
-          </select>
-        </label>
-        <div class="row">
-          <button id="send">AI に送る</button>
-          <button id="toggle-preview" class="ghost">プロンプトを見る</button>
-        </div>
-        <pre id="preview" hidden></pre>
-      </section>
-
-      <section class="card">
-        <h2>2. 受け取る</h2>
-        <p class="note">
-          AI
-          の返信をここに貼り付け（この画面のどこに貼っても拾います）。テキストファイルのドロップも可。
-        </p>
-        <textarea id="inbox" placeholder="AI の返信をそのまま貼り付け"></textarea>
-        <div class="row">
-          <button id="import">貼り付けた内容を取り込む</button>
-          <button id="pull" class="ghost" hidden>クリップボードから取り込む</button>
-        </div>
-        <p class="note">
-          貼り付けただけで反応しないときは上のボタン。端末によっては paste イベントが飛んでこない。
-        </p>
-        <div id="drop">ここにテキストファイルをドロップ</div>
-      </section>
-
-      <section class="card" id="result-card" hidden>
-        <h2>取り込んだ日程</h2>
-        <div id="result"></div>
-      </section>
-
-      <section class="card">
-        <h2>ログ</h2>
-        <ul id="log"></ul>
-      </section>
-    </main>
-
+    <main><!--README--></main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,5 +1,6 @@
 import { shareTargetManifest } from 'uweb-cp/transports'
 import { defineConfig } from 'vite-plus'
+import { readmePage } from './plugins/readme'
 
 /**
  * GitHub Pages はサブパス (`/uweb-cp/`) で配信されるので、base を環境で切り替える。
@@ -41,6 +42,8 @@ export default defineConfig({
   preview: { allowedHosts: TUNNEL_HOSTS },
 
   plugins: [
+    readmePage(),
+
     {
       name: 'uweb-cp-manifest',
 

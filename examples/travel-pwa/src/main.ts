@@ -44,13 +44,56 @@ function log(message: string, kind: 'ok' | 'warn' | 'bad' | '' = ''): void {
   el('log').prepend(line)
 }
 
-// --- 環境の見える化 -----------------------------------------------------------
+// --- デモの骨組み -------------------------------------------------------------
+
+/**
+ * 本文は README から生成されるので、デモは `<!-- demo -->` の位置に置かれた
+ * 空の器へ自分で組み立てる。定数の HTML なので innerHTML で足りる。
+ */
+function renderDemo(): void {
+  el('demo').innerHTML = `
+    <div class="duo">
+      <div>
+        <p class="step">1. 送る</p>
+        <div class="row"><span class="k">行き先</span><input id="destination" value="金沢" /></div>
+        <div class="row"><span class="k">泊数</span><input id="nights" type="number" min="0" max="14" value="2" /></div>
+        <div class="row"><span class="k">出発日</span><input id="date" type="date" /></div>
+        <div class="row"><span class="k">時機</span><select id="emit">
+          <option value="now">その場で出す (now)</option>
+          <option value="on-approval">承認してから出す (on-approval)</option>
+        </select></div>
+        <textarea id="instruction">和菓子と古い街並みを中心に、移動は徒歩とバスで。</textarea>
+        <div class="row">
+          <button id="send">AI に送る</button>
+          <button id="toggle-preview" class="sub">プロンプトを見る</button>
+        </div>
+        <pre id="preview" hidden></pre>
+      </div>
+      <div>
+        <p class="step">2. 受け取る</p>
+        <textarea id="inbox" placeholder="AI の返信をそのまま貼り付け"></textarea>
+        <div class="row">
+          <button id="import" class="sub">取り込む</button>
+          <button id="pull" class="sub" hidden>クリップボードから</button>
+        </div>
+        <div id="drop">テキストファイルをドロップ</div>
+        <p class="hint">この画面のどこに貼っても拾います。反応しなければ「取り込む」を押してください。</p>
+      </div>
+    </div>
+    <div id="result-card" hidden><div id="result"></div></div>
+    <details>
+      <summary>この端末で使える経路とログ</summary>
+      <div class="caps" id="caps"></div>
+      <ul id="log"></ul>
+    </details>`
+}
 
 function renderCapabilities(capabilities: Capabilities): void {
   const recommended = recommendTransports(capabilities)
   const rows: Array<[string, string, boolean]> = [
     ['navigator.share', String(capabilities.webShare), capabilities.webShare],
     ['clipboard.writeText', String(capabilities.clipboardWrite), capabilities.clipboardWrite],
+    ['clipboard.readText', String(capabilities.clipboardRead), capabilities.clipboardRead],
     ['paste イベント', String(capabilities.pasteEvent), capabilities.pasteEvent],
     ['PWA インストール済み', String(capabilities.installedPwa), capabilities.installedPwa],
     ['Share Target', capabilities.shareTarget, capabilities.shareTarget === 'installed'],
@@ -65,14 +108,12 @@ function renderCapabilities(capabilities: Capabilities): void {
       label.textContent = name
       const state = document.createElement('span')
       state.textContent = value
-      state.className = good ? 'yes' : 'no'
+      if (good) state.className = 'yes'
       row.append(label, state)
       return row
     }),
   )
 }
-
-// --- 取り込み結果の描画 -------------------------------------------------------
 
 /** data は LLM 由来なので、文字列は必ず textContent として置く。 */
 function renderItinerary(itinerary: Itinerary): void {
@@ -122,19 +163,19 @@ function renderItinerary(itinerary: Itinerary): void {
 
 // --- 本体 ---------------------------------------------------------------------
 
+renderDemo()
+
 const capabilities = detectCapabilities()
 renderCapabilities(capabilities)
-log(`起動。送信は ${recommendTransports(capabilities).outbound[0] ?? 'なし'} を試します`)
+log(`送信は ${recommendTransports(capabilities).outbound[0] ?? 'なし'} を試します`)
 
-// 受信の挙動は emit に依らないので、応答待ちの store だけ共有して 2 つ持つ。
-// 実機で両モードを比べられるようにするための、このデモ固有の作り。
-const store = createLocalStorageStore()
 // 戻り先の文面はアプリの UX なので、ライブラリ任せにせずここで決める
+const store = createLocalStorageStore()
 const base = {
   contract: itineraryContract,
   locale: 'ja',
   store,
-  returnTo: { name: '旅行日程デモ', url: new URL(import.meta.env.BASE_URL, location.href).href },
+  returnTo: { name: 'uweb-cp のデモ', url: new URL(import.meta.env.BASE_URL, location.href).href },
 } as const
 
 const exchanges = {
@@ -176,16 +217,6 @@ async function sendNow(): Promise<void> {
   }
 }
 
-el('send').addEventListener('click', () => {
-  void sendNow()
-})
-
-el('toggle-preview').addEventListener('click', () => {
-  const pane = el('preview')
-  pane.hidden = !pane.hidden
-  if (!pane.hidden) pane.textContent = selected().preview(currentInput())
-})
-
 function handleResult(result: Result<Extraction<Itinerary>>): void {
   if (result.ok) {
     const { envelope, via, issues } = result.value
@@ -198,9 +229,6 @@ function handleResult(result: Result<Extraction<Itinerary>>): void {
   log(`取り込めなかった (${result.code})`, 'bad')
   for (const issue of result.issues) log(`  ${issue.message}`, 'bad')
 }
-
-// 受信は emit に依らないので片方だけ張れば足りる
-exchanges.now.listen(handleResult)
 
 /**
  * 経路に依存しない取り込み口。
@@ -217,10 +245,6 @@ async function importFromInbox(): Promise<void> {
   handleResult(await exchanges.now.accept(text))
 }
 
-el('import').addEventListener('click', () => {
-  void importFromInbox()
-})
-
 /** 引き取りは利用者の操作の中からしか呼べないので、ボタンの中で呼ぶ。 */
 async function pullFromClipboard(): Promise<void> {
   try {
@@ -231,6 +255,30 @@ async function pullFromClipboard(): Promise<void> {
     log(aborted ? 'クリップボードの読み取りを拒否されました' : '読み取れませんでした', 'bad')
   }
 }
+
+async function nudgeIfWaiting(): Promise<void> {
+  const pending = await store.latest(itineraryContract.ref)
+  if (!pending || !el('result-card').hidden) return
+  field('inbox').focus()
+  log('戻ってきました。返信をここに貼り付けてください', 'warn')
+}
+
+// 受信は emit に依らないので片方だけ張れば足りる
+exchanges.now.listen(handleResult)
+
+el('send').addEventListener('click', () => {
+  void sendNow()
+})
+
+el('toggle-preview').addEventListener('click', () => {
+  const pane = el('preview')
+  pane.hidden = !pane.hidden
+  if (!pane.hidden) pane.textContent = selected().preview(currentInput())
+})
+
+el('import').addEventListener('click', () => {
+  void importFromInbox()
+})
 
 // 使えない端末では出さない。押せるのに必ず失敗するボタンは出さないほうがよい
 el('pull').hidden = !capabilities.clipboardRead
@@ -243,17 +291,6 @@ document.addEventListener('paste', (event) => {
   const text = event.clipboardData?.getData('text/plain') ?? ''
   log(`貼り付けを検知: ${text.length} 文字`)
 })
-
-/**
- * AI アプリから戻ってきた直後に貼り付け先へ誘導する。
- * 送信済みの往復が宙に浮いているときだけ出すので、ただ画面を切り替えただけでは鳴らない。
- */
-async function nudgeIfWaiting(): Promise<void> {
-  const pending = await store.latest(itineraryContract.ref)
-  if (!pending || !el('result-card').hidden) return
-  field('inbox').focus()
-  log('戻ってきました。返信をここに貼り付けてください', 'warn')
-}
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') void nudgeIfWaiting()

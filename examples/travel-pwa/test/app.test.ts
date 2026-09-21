@@ -1,9 +1,4 @@
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vite-plus/test'
-
-const HERE = dirname(fileURLToPath(import.meta.url))
 
 const reply = (destination: string) =>
   `作ってみました。\n\n\`\`\`json ucp\n${JSON.stringify({
@@ -26,11 +21,9 @@ const reply = (destination: string) =>
     },
   })}\n\`\`\`\n\nいかがでしょう。`
 
-/** dist ではなく index.html の中身をそのまま DOM に流し込み、main.ts を素で起動する。 */
-const mountIndexHtml = () => {
-  const html = readFileSync(join(HERE, '..', 'index.html'), 'utf8')
-  const body = html.slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('</body>'))
-  document.body.innerHTML = body.replace(/<script[\s\S]*?<\/script>/g, '')
+/** README から生成される本文は使わず、デモの器だけ置いて main.ts を起動する。 */
+const mountDemoRoot = () => {
+  document.body.innerHTML = '<main><div id="demo"></div></main>'
 }
 
 const paste = (text: string) => {
@@ -44,8 +37,14 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 
 describe('travel-pwa', () => {
   beforeAll(async () => {
-    mountIndexHtml()
+    mountDemoRoot()
     await import('../src/main')
+  })
+
+  it('builds its own markup into the demo slot', () => {
+    expect(document.getElementById('send')).not.toBeNull()
+    expect(document.getElementById('inbox')).not.toBeNull()
+    expect(document.getElementById('import')).not.toBeNull()
   })
 
   it('shows what the environment supports', () => {
