@@ -56,23 +56,11 @@ exchange.listen((result) => {
 
 ## ドキュメント
 
-- [アーキテクチャ](./docs/architecture.md)
-- [UCP-1 封筒フォーマット](./docs/protocol.md)
-- [設計判断の記録 (ADR)](./docs/adr/)
-- [実機検証用のデモ PWA](./examples/travel-pwa) — 共有シートや Share Target はここで確かめる
+- [アーキテクチャ](./docs/architecture.md) — 4 層構成と、設計の前提になっている環境制約
+- [UCP-1 封筒フォーマット](./docs/protocol.md) — 往復フォーマットと探索規則
+- [設計判断の記録 (ADR)](./docs/adr/) — なぜそうしたか
 
-## 開発
-
-ツールチェインは [Vite+](https://viteplus.dev/) に統合。
-
-```sh
-vp install
-vp check         # format + lint + 型チェック
-vp test run      # テスト
-vp run -r build  # ビルド
-```
-
-リポジトリは `main/` を既定ワークツリーとし、並行作業は兄弟ディレクトリに worktree を切る構成。
+手を入れる人は [CONTRIBUTING](./CONTRIBUTING.md)。
 
 ## ライセンス
 
