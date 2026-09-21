@@ -34,4 +34,5 @@ vp run -r build    # 全パッケージのビルド (vp pack)
 
 - **lint / format の設定は root の `vite.config.ts`** に集約されている。`.oxlintrc.json` / `.oxfmtrc.json` は読まれないので置かない
 - `lint.options.typeAware` + `typeCheck` を有効にしているので、`vp check` が型チェックまで行う。別途 `tsc` を走らせる必要はない
+- **`vp check` / `vp test` の前に `vp run -r build` が必要**。`examples/*` は `uweb-cp` を実際の利用者と同じく `dist` 経由で解決するため
 - `vp <name>` は組み込みコマンド、`vp run <name>` が package.json スクリプト

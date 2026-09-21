@@ -15,6 +15,8 @@ jobs:
           node-version: '22'
           cache: true
       - run: vp install --frozen-lockfile
+      # examples は uweb-cp を実際の利用者と同じく dist 経由で解決するので、
+      # 型検査とテストの前にビルドが要る
+      - run: vp run -r build
       - run: vp check
       - run: vp test run
-      - run: vp run -r build
