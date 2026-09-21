@@ -100,6 +100,7 @@
 
       input,
       textarea,
+      select,
       button {
         font: inherit;
         color: inherit;
@@ -278,6 +279,13 @@
           >依頼したいこと<textarea id="instruction" style="min-height: 64px">
 和菓子と古い街並みを中心に、移動は徒歩とバスで。</textarea>
         </label>
+        <label style="margin-top: 10px"
+          >封筒を出させる時機
+          <select id="emit">
+            <option value="on-approval">承認してから出す (on-approval)</option>
+            <option value="now">その場で出す (now)</option>
+          </select>
+        </label>
         <div class="row">
           <button id="send">AI に送る</button>
           <button id="toggle-preview" class="ghost">プロンプトを見る</button>
@@ -292,6 +300,13 @@
           の返信をここに貼り付け（この画面のどこに貼っても拾います）。テキストファイルのドロップも可。
         </p>
         <textarea id="inbox" placeholder="AI の返信をそのまま貼り付け"></textarea>
+        <div class="row">
+          <button id="import">取り込む</button>
+          <span class="note"
+            >貼り付けただけで反応しないときはこのボタン。端末によっては paste
+            イベントが飛んでこない</span
+          >
+        </div>
         <div id="drop">ここにテキストファイルをドロップ</div>
       </section>
 

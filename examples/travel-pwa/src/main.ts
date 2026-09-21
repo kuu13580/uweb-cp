@@ -1,8 +1,11 @@
 import {
   type Capabilities,
   createExchange,
+  createLocalStorageStore,
   detectCapabilities,
+  type Extraction,
   recommendTransports,
+  type Result,
   type SendInput,
 } from 'uweb-cp'
 import { type Itinerary, itineraryContract } from './contract'
@@ -15,9 +18,15 @@ function el(id: string): HTMLElement {
   return found
 }
 
-function field(id: string): HTMLInputElement | HTMLTextAreaElement {
+function field(id: string): HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
   const found = el(id)
-  if (found instanceof HTMLInputElement || found instanceof HTMLTextAreaElement) return found
+  if (
+    found instanceof HTMLInputElement ||
+    found instanceof HTMLTextAreaElement ||
+    found instanceof HTMLSelectElement
+  ) {
+    return found
+  }
   throw new Error(`#${id} は入力欄ではない`)
 }
 
@@ -116,7 +125,20 @@ const capabilities = detectCapabilities()
 renderCapabilities(capabilities)
 log(`起動。送信は ${recommendTransports(capabilities).outbound[0] ?? 'なし'} を試します`)
 
-const exchange = createExchange({ contract: itineraryContract, locale: 'ja' })
+// 受信の挙動は emit に依らないので、応答待ちの store だけ共有して 2 つ持つ。
+// 実機で両モードを比べられるようにするための、このデモ固有の作り。
+const store = createLocalStorageStore()
+const exchanges = {
+  now: createExchange({ contract: itineraryContract, locale: 'ja', store, emit: 'now' }),
+  'on-approval': createExchange({
+    contract: itineraryContract,
+    locale: 'ja',
+    store,
+    emit: 'on-approval',
+  }),
+}
+
+const selected = () => exchanges[field('emit').value === 'now' ? 'now' : 'on-approval']
 
 function currentInput(): SendInput {
   const instruction = field('instruction').value.trim()
@@ -137,9 +159,12 @@ async function sendNow(): Promise<void> {
   send.disabled = true
 
   try {
-    const { via, rid, prompt } = await exchange.send(currentInput())
+    const { via, rid, prompt, approvalPhrase } = await selected().send(currentInput())
     log(`送信した: via=${via} rid=${rid} (${prompt.length} 文字)`, 'ok')
     if (via === 'clipboard') log('クリップボードに入れました。AI に貼り付けてください', 'warn')
+    if (approvalPhrase) {
+      log(`内容を詰めたら AI に「${approvalPhrase}」と送ると封筒が出ます`, 'warn')
+    }
   } catch (error) {
     log(`送信できなかった: ${error instanceof Error ? error.message : String(error)}`, 'bad')
   } finally {
@@ -154,10 +179,10 @@ el('send').addEventListener('click', () => {
 el('toggle-preview').addEventListener('click', () => {
   const pane = el('preview')
   pane.hidden = !pane.hidden
-  if (!pane.hidden) pane.textContent = exchange.preview(currentInput())
+  if (!pane.hidden) pane.textContent = selected().preview(currentInput())
 })
 
-exchange.listen((result) => {
+function handleResult(result: Result<Extraction<Itinerary>>): void {
   if (result.ok) {
     const { envelope, via, issues } = result.value
     log(`取り込んだ: via=${via} rid=${envelope.rid ?? 'なし'}`, 'ok')
@@ -168,10 +193,35 @@ exchange.listen((result) => {
 
   log(`取り込めなかった (${result.code})`, 'bad')
   for (const issue of result.issues) log(`  ${issue.message}`, 'bad')
+}
+
+// 受信は emit に依らないので片方だけ張れば足りる
+exchanges.now.listen(handleResult)
+
+/**
+ * 経路に依存しない取り込み口。
+ * paste イベントが飛んでこない環境 (一部の WebView や IME 経由の貼り付け) でも、
+ * ここを押せば必ず同じ処理に入る。切り分けのためにも残す。
+ */
+async function importFromInbox(): Promise<void> {
+  const text = field('inbox').value.trim()
+  if (!text) {
+    log('取り込む内容が空です', 'warn')
+    return
+  }
+  log(`手動で取り込み: ${text.length} 文字`)
+  handleResult(await exchanges.now.accept(text))
+}
+
+el('import').addEventListener('click', () => {
+  void importFromInbox()
 })
 
-// 受信自体は document 全体で拾っている。この textarea は「貼った実感」のために置いてあるだけ
-field('inbox').addEventListener('paste', () => log('貼り付けを検知'))
+// 診断用: 受信そのものが起きているかを、解釈の成否と切り離して見せる
+document.addEventListener('paste', (event) => {
+  const text = event.clipboardData?.getData('text/plain') ?? ''
+  log(`貼り付けを検知: ${text.length} 文字`)
+})
 
 const drop = el('drop')
 for (const type of ['dragenter', 'dragover'] as const) {
