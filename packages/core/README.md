@@ -86,7 +86,8 @@ arrives validated**.
 | `detectCapabilities()` / `recommendTransports(caps)`           | What this browser can do, and the transport order to prefer. Safe to call during SSR — everything reports `false` without a DOM. |
 
 `uweb-cp/transports` exports the individual transports, plus `shareTargetManifest()` for the
-`share_target` entry in your web app manifest.
+`share_target` entry in your web app manifest. If you rename its params, pass the same options
+as `createExchange({ shareTarget })` — the manifest and the receiver have to agree.
 
 ## The round trip
 

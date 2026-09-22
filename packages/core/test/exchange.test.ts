@@ -42,6 +42,17 @@ const fakeOutbound = (
   }
 }
 
+/**
+ * share-target が既定の受信経路に入る条件を満たした環境。
+ * display-mode を偽装できないので、iOS 用の navigator.standalone を使う。
+ */
+const stubInstalledPwa = (search: string) => {
+  vi.stubGlobal('document', new EventTarget())
+  vi.stubGlobal('navigator', { standalone: true, userAgentData: {}, serviceWorker: {} })
+  vi.stubGlobal('location', { search, pathname: '/' })
+  vi.stubGlobal('history', { replaceState: vi.fn() })
+}
+
 /** 任意のタイミングでテキストを流し込める受信経路。 */
 const fakeInbound = (): InboundTransport & {
   emit: (text: string) => void
@@ -260,6 +271,39 @@ describe('listen', () => {
         value: expect.objectContaining({ via: 'sentinel-scan' }),
       }),
     )
+  })
+
+  it('hands the share-target options to the transport it builds', async () => {
+    // inbound を自前で組まずに params を改名したいのが本題。ずれると共有からの起動が無言で失敗する
+    stubInstalledPwa(`?body=${encodeURIComponent(reply('r_x', 4))}`)
+    try {
+      const exchange = createExchange({
+        contract: trip,
+        store: createMemoryStore(),
+        shareTarget: { params: { text: 'body' } },
+      })
+      const onResult = vi.fn()
+      exchange.listen(onResult)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(onResult).toHaveBeenCalledWith(expect.objectContaining({ ok: true }))
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('finds nothing under the renamed param without the options', async () => {
+    stubInstalledPwa(`?body=${encodeURIComponent(reply('r_x', 4))}`)
+    try {
+      const exchange = createExchange({ contract: trip, store: createMemoryStore() })
+      const onResult = vi.fn()
+      exchange.listen(onResult)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(onResult).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('stops every transport when disposed', () => {

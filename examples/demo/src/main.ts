@@ -347,6 +347,8 @@ const base = {
   locale: 'ja',
   store,
   returnTo: { name: 'uweb-cp のデモ', url: new URL(import.meta.env.BASE_URL, location.href).href },
+  // manifest の share_target.action と同じ値。どちらも base から出るのでずれない
+  shareTarget: { action: import.meta.env.BASE_URL },
 } as const
 
 /** 列挙は相談してから確定するのが自然なので、このデモは on-approval で固定する。 */

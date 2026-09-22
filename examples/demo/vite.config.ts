@@ -8,8 +8,8 @@ import { readmePage } from './plugins/readme'
  */
 const BASE = process.env.UWEB_CP_BASE ?? '/'
 
-/** 受信側 (src/main.ts) と同じ値を使うこと。ずれると共有シートからの起動が無言で失敗する。 */
-export const SHARE_TARGET = { action: BASE }
+/** 受信側は src/main.ts が import.meta.env.BASE_URL から出す。どちらも base 由来なのでずれない。 */
+const SHARE_TARGET = { action: BASE }
 
 const manifest = {
   name: 'µweb-cp デモ',

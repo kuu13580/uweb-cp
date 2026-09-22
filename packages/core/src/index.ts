@@ -39,6 +39,7 @@ export {
   type ReturnTo,
 } from './prompt'
 export { createRid } from './rid'
+export type { ShareTargetOptions } from './transports/inbound/share-target'
 export {
   createLocalStorageStore,
   createMemoryStore,

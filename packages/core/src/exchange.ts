@@ -7,7 +7,7 @@ import { createLocalStorageStore, type PendingStore } from './store'
 import { readClipboardText } from './transports/inbound/clipboard'
 import { fileDropTransport } from './transports/inbound/file-drop'
 import { pasteTransport } from './transports/inbound/paste'
-import { shareTargetTransport } from './transports/inbound/share-target'
+import { type ShareTargetOptions, shareTargetTransport } from './transports/inbound/share-target'
 import { clipboardTransport } from './transports/outbound/clipboard'
 import { downloadTransport } from './transports/outbound/download'
 import { webShareTransport } from './transports/outbound/web-share'
@@ -41,6 +41,11 @@ export interface ExchangeOptions<T> {
   returnTo?: ReturnTo
   /** Allow a bare JSON object to count as `data` when no envelope is found. */
   allowBareJson?: boolean
+  /**
+   * Passed to the share-target transport, which needs the same param names as the manifest.
+   * Only read when `inbound` is left out; supplying `inbound` means configuring it yourself.
+   */
+  shareTarget?: ShareTargetOptions
 }
 
 export interface SendInput {
@@ -149,7 +154,7 @@ export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
     },
 
     listen(onResult) {
-      const transports = options.inbound ?? defaultInbound()
+      const transports = options.inbound ?? defaultInbound(options.shareTarget)
       const disposers = transports.map((transport) =>
         transport.start((text) => {
           void this.accept(text).then(onResult)
@@ -202,11 +207,14 @@ const OUTBOUND_FACTORIES: Record<OutboundTransportId, () => OutboundTransport[]>
   'deep-link': () => [],
 }
 
-const INBOUND_FACTORIES: Record<InboundTransportId, () => InboundTransport[]> = {
+const INBOUND_FACTORIES: Record<
+  InboundTransportId,
+  (shareTarget?: ShareTargetOptions) => InboundTransport[]
+> = {
   paste: () => [pasteTransport()],
   'file-drop': () =>
     typeof globalThis.document === 'undefined' ? [] : [fileDropTransport(globalThis.document)],
-  'share-target': () => [shareTargetTransport()],
+  'share-target': (shareTarget) => [shareTargetTransport(shareTarget)],
 }
 
 function defaultOutbound(): OutboundTransport[] {
@@ -215,6 +223,8 @@ function defaultOutbound(): OutboundTransport[] {
   )
 }
 
-function defaultInbound(): InboundTransport[] {
-  return recommendTransports(detectCapabilities()).inbound.flatMap((id) => INBOUND_FACTORIES[id]())
+function defaultInbound(shareTarget?: ShareTargetOptions): InboundTransport[] {
+  return recommendTransports(detectCapabilities()).inbound.flatMap((id) =>
+    INBOUND_FACTORIES[id](shareTarget),
+  )
 }
