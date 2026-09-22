@@ -252,13 +252,6 @@
         margin-bottom: 7px;
       }
 
-      .row > .k {
-        font-size: 12px;
-        color: var(--dim);
-        width: 52px;
-        flex: none;
-      }
-
       input,
       textarea,
       select,
@@ -336,55 +329,13 @@
         margin: 8px 0 0;
       }
 
-      #instruction {
-        min-height: 56px;
-      }
-
       /* 畳んだ中身。既定では見えないので、ここだけ少し詰める */
-      .more {
-        padding-top: 10px;
-      }
-
-      .more textarea {
-        margin-top: 3px;
-      }
-
-      #preview {
-        margin-top: 9px;
-        max-height: 280px;
-        overflow: auto;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-
       /* ---- 取り込んだ結果 ---- */
 
       #result-card {
         border-top: 1px solid var(--line);
         margin-top: 14px;
         padding-top: 14px;
-      }
-
-      ul.ideas {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 6px;
-      }
-
-      ul.ideas li {
-        max-width: none;
-        border-bottom: 1px solid var(--hair);
-        padding-bottom: 6px;
-      }
-
-      ul.ideas li:last-child {
-        border-bottom: 0;
-      }
-
-      ul.ideas .title {
-        font-weight: 600;
       }
 
       /* effort は enum なので、そのままバッジに流せる */
@@ -513,56 +464,6 @@
       .yes {
         color: var(--ok) !important;
       }
-
-      #log {
-        list-style: none;
-        margin: 10px 0 0;
-        padding: 0;
-        font-family: var(--mono);
-        font-size: 11.5px;
-        display: grid;
-        gap: 3px;
-        max-height: 200px;
-        overflow-y: auto;
-      }
-
-      #log li {
-        color: var(--dim);
-        border-left: 2px solid var(--hair);
-        padding-left: 9px;
-        margin: 0;
-        max-width: none;
-      }
-
-      #log li.ok {
-        border-color: var(--ok);
-        color: var(--ink);
-      }
-
-      #log li.warn {
-        border-color: var(--warn);
-      }
-
-      #log li.bad {
-        border-color: var(--bad);
-      }
-
-      #drop {
-        border: 1px dashed var(--line);
-        border-radius: 3px;
-        padding: 7px;
-        text-align: center;
-        font-size: 11.5px;
-        color: var(--dim);
-        margin-top: 7px;
-      }
-
-      #drop.over {
-        border-color: var(--navy);
-        color: var(--ink);
-      }
-
-      /* ---- sticky ヘッダ ---- */
 
       .bar {
         position: sticky;
