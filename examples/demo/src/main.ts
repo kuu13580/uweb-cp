@@ -317,11 +317,15 @@ async function sendNow(): Promise<void> {
 
   try {
     const { via, rid, prompt, approvalPhrase } = await exchange.send(currentInput())
-    log(`送信した: via=${via} rid=${rid} (${prompt.length} 文字)`, 'ok')
-    if (via === 'clipboard') log('クリップボードに入れました。AI に貼り付けてください', 'warn')
-    if (approvalPhrase) {
-      log(`内容を詰めたら AI に「${approvalPhrase}」と送ると封筒が出ます`, 'warn')
-    }
+    console.debug(`[uweb-cp] 送信した: rid=${rid} (${prompt.length} 文字)`)
+
+    // 状態行は 1 行しか出せないので畳む。経路名を残すのは、実機でどれが選ばれたかが
+    // 手元の console では見られないため (検証はスマホで行う)
+    const notes = [
+      via === 'clipboard' ? 'クリップボードに入れました。AI に貼り付けてください' : '',
+      approvalPhrase ? `内容を詰めたら AI に「${approvalPhrase}」と送ると封筒が出ます` : '',
+    ].filter(Boolean)
+    log([`送信した（${via}）`, ...notes].join(' — '), notes.length > 0 ? 'warn' : 'ok')
   } catch (error) {
     log(`送信できなかった: ${error instanceof Error ? error.message : String(error)}`, 'bad')
   } finally {
