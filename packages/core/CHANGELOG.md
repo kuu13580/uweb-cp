@@ -1,5 +1,13 @@
 # uweb-cp
 
+## 0.1.1
+
+### Patch Changes
+
+- 0.1.0 was unpublished shortly after it went out, and npm never lets a `name@version` be
+  reused, so this is the first version actually obtainable from the registry. The contents are
+  identical to 0.1.0.
+
 ## 0.1.0
 
 ### Minor Changes
