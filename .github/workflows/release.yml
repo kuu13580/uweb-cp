@@ -1,0 +1,29 @@
+name: Release
+
+# changeset version でバージョンを上げ、uweb-cp@<version> のタグを push すると公開する。
+on:
+  push:
+    tags: ['uweb-cp@*']
+
+permissions:
+  contents: read
+  # Trusted Publishing (OIDC) の要。npm のトークンは持たない
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: voidzero-dev/setup-vp@v1.20.0
+        with:
+          node-version: '22'
+          cache: true
+      # Trusted Publishing を解するのは npm 11.5.1 から。Node 22 同梱は 10 系
+      - run: npm install -g npm@latest
+      - run: vp install --frozen-lockfile
+      - run: vp run -r build
+      - run: vp check
+      - run: vp test run
+      - run: npm publish
+        working-directory: packages/core

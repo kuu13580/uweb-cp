@@ -38,6 +38,25 @@ pnpm run tunnel    # ビルド → preview → HTTPS トンネル → URL と QR
 
 固定 URL 版は <https://kuu13580.github.io/uweb-cp/>（`main` への push で自動更新）。
 
+## リリース
+
+```sh
+pnpm exec changeset            # 変更の粒度と bump を書く
+pnpm exec changeset version    # version と CHANGELOG を更新
+git commit -am "chore(release): uweb-cp <version>"
+git tag uweb-cp@<version> && git push --follow-tags
+```
+
+タグの push で [Release ワークフロー](./.github/workflows/release.yml) が走り、
+**Trusted Publishing (OIDC) で公開する。npm のトークンは置かない。**
+
+npm は bypass-2FA トークンでの直接 publish を 2027-01 に廃止し、新規の TOTP 登録も
+停止している（2FA はパスキーのみ）。手元から出す場合は `npm publish` を対話的に叩いて
+ブラウザでパスキー承認する必要がある。0.1.0 はその方法で出した。
+
+> trusted publisher は npmjs.com のパッケージ設定で、リポジトリと**ワークフローのファイル名**を
+> 指定して登録する。パッケージが存在しないと登録できないため、初回だけは手元から出すしかない。
+
 ## リポジトリ構成
 
 git リポジトリの実体は `uweb-cp/main/`。親ディレクトリ `uweb-cp/` は git 管理外の worktree 置き場で、
