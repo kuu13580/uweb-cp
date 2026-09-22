@@ -1,6 +1,7 @@
 name: Release
 
-# changeset version でバージョンを上げ、uweb-cp@<version> のタグを push すると公開する。
+# changeset version でバージョンを上げ、uweb-cp@<version> のタグを push すると
+# ステージに積む。公開されるのは、人が npmjs.com で 2FA を通して承認した後。
 on:
   push:
     tags: ['uweb-cp@*']
@@ -11,7 +12,7 @@ permissions:
   id-token: write
 
 jobs:
-  publish:
+  stage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,11 +20,12 @@ jobs:
         with:
           node-version: '22'
           cache: true
-      # Trusted Publishing を解するのは npm 11.5.1 から。Node 22 同梱は 10 系
+      # staged publishing は npm 11.15.0 から。Node 22 同梱は 10 系
       - run: npm install -g npm@latest
       - run: vp install --frozen-lockfile
       - run: vp run -r build
       - run: vp check
       - run: vp test run
-      - run: npm publish
+      # OIDC の資格情報では承認できない。そこが人の関門である意味なので、直接 publish しない
+      - run: npm stage publish
         working-directory: packages/core

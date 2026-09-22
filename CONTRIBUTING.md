@@ -48,7 +48,11 @@ git tag uweb-cp@<version> && git push --follow-tags
 ```
 
 タグの push で [Release ワークフロー](./.github/workflows/release.yml) が走り、
-**Trusted Publishing (OIDC) で公開する。npm のトークンは置かない。**
+**Trusted Publishing (OIDC) でステージに積む。npm のトークンは置かない。**
+
+公開はここでは終わらない。npmjs.com の **Staged Packages** で中身を確認し、2FA を通して
+承認した時点で公開される（`npm stage list` / `npm stage view <id>` / `npm stage approve <id>` でも可）。
+**OIDC の資格情報では承認できない。**ワークフローが乗っ取られても、人が通さない限り世に出ない。
 
 npm は bypass-2FA トークンでの直接 publish を 2027-01 に廃止し、新規の TOTP 登録も
 停止している（2FA はパスキーのみ）。手元から出す場合は `npm publish` を対話的に叩いて
@@ -56,6 +60,7 @@ npm は bypass-2FA トークンでの直接 publish を 2027-01 に廃止し、�
 
 > trusted publisher は npmjs.com のパッケージ設定で、リポジトリと**ワークフローのファイル名**を
 > 指定して登録する。パッケージが存在しないと登録できないため、初回だけは手元から出すしかない。
+> Allowed actions の「publish directly」は**外しておく**（ステージのみ）。
 
 ## リポジトリ構成
 
