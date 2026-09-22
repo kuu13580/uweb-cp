@@ -406,9 +406,11 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') void nudgeIfWaiting()
 })
 
+// 登録の成否は paste と同じ扱いにする。Share Target から起動したとき、登録の完了が
+// 遅れて届いて取り込み結果の表示を奪っていた。失敗だけは残す (インストールが出来なくなる)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker
     .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
-    .then(() => log('Service Worker を登録した (インストール条件)'))
+    .then(() => console.debug('[uweb-cp] Service Worker を登録した (インストール条件)'))
     .catch(() => log('Service Worker を登録できなかった', 'warn'))
 }
