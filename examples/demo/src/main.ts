@@ -43,19 +43,43 @@ function button(id: string): HTMLButtonElement {
   throw new Error(`#${id} はボタンではない`)
 }
 
+type Kind = 'ok' | 'warn' | 'bad' | ''
+
 /**
  * 状態は 1 行だけ見せる。取り込めなかった理由が分からないのが一番困るので、
  * 表示自体は残す。詳細は console に出す。
+ *
+ * ただし「起きたこと」と「次にすること」は寿命が違う。1 つの変数に両方を書くと、
+ * 復帰時の案内が送信結果を消してしまう (実際に共有シートから戻った瞬間に消えていた)。
  */
-function log(message: string, kind: 'ok' | 'warn' | 'bad' | '' = ''): void {
+let fact = ''
+let hint = ''
+let kind: Kind = ''
+
+function paint(): void {
   const status = maybe('status')
-  if (status) {
-    status.textContent = message
-    status.className = `status ${kind}`
-    // スマホではカードが画面より高く、状態行が送信ボタンの 200px 以上下に来る。
-    // nearest なので既に見えていれば動かない
-    status.scrollIntoView({ block: 'nearest' })
-  }
+  if (!status) return
+  status.textContent = [fact, hint].filter(Boolean).join(' — ')
+  status.className = `status ${kind}`
+  // スマホではカードが画面より高く、状態行が送信ボタンの 200px 以上下に来る。
+  // nearest なので既に見えていれば動かない
+  status.scrollIntoView({ block: 'nearest' })
+}
+
+/** 起きたこと。前の案内は役目を終えているので消す。 */
+function log(message: string, level: Kind = ''): void {
+  fact = message
+  hint = ''
+  kind = level
+  paint()
+  console.debug(`[uweb-cp] ${message}`)
+}
+
+/** 次にすること。起きたことは消さずに添える。 */
+function guide(message: string, level: Kind = 'warn'): void {
+  hint = message
+  kind = level
+  paint()
   console.debug(`[uweb-cp] ${message}`)
 }
 
@@ -340,13 +364,14 @@ async function sendNow(): Promise<void> {
     const { via, rid, prompt, approvalPhrase } = await exchange.send(currentInput())
     console.debug(`[uweb-cp] 送信した: rid=${rid} (${prompt.length} 文字)`)
 
-    // 状態行は 1 行しか出せないので畳む。経路名を残すのは、実機でどれが選ばれたかが
-    // 手元の console では見られないため (検証はスマホで行う)
+    // 経路名を残すのは、実機でどれが選ばれたかが手元の console では見られないため
+    log(`送信した（${via}）`, 'ok')
+
     const notes = [
       via === 'clipboard' ? 'クリップボードに入れました。AI に貼り付けてください' : '',
       approvalPhrase ? `内容を詰めたら AI に「${approvalPhrase}」と送ると封筒が出ます` : '',
     ].filter(Boolean)
-    log([`送信した（${via}）`, ...notes].join(' — '), notes.length > 0 ? 'warn' : 'ok')
+    if (notes.length > 0) guide(notes.join(' / '))
   } catch (error) {
     log(`送信できなかった: ${error instanceof Error ? error.message : String(error)}`, 'bad')
   } finally {
@@ -401,7 +426,7 @@ async function nudgeIfWaiting(): Promise<void> {
   const pending = await store.latest(ideaListContract.ref)
   if (!pending || !el('result-card').hidden) return
   field('inbox').focus()
-  log('戻ってきました。返信をここに貼り付けてください', 'warn')
+  guide('戻ってきました。返信をここに貼り付けてください')
 }
 
 exchange.listen(handleResult)
