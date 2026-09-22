@@ -2,13 +2,13 @@ import { callMethod, getProp } from '../../reflect'
 import type { InboundMeta, InboundTransport } from '../types'
 
 export interface ShareTargetOptions {
-  /** manifest の share_target.action と一致させる。省略時はパスを問わない。 */
+  /** Must match share_target.action in the manifest. Left out, any path is accepted. */
   action?: string
-  /** manifest の share_target.params に合わせたクエリ名。 */
+  /** Query names, matching share_target.params in the manifest. */
   params?: { title?: string; text?: string; url?: string }
   /**
-   * 取り込んだ後に URL からクエリを消す。既定 true。
-   * 消さないと再読み込みのたびに同じ内容が再投入される。
+   * Strip the query from the URL once imported. Default true.
+   * Leaving it in re-imports the same payload on every reload.
    */
   cleanUrl?: boolean
 }
@@ -18,13 +18,13 @@ const DEFAULT_PARAMS = { title: 'title', text: 'text', url: 'url' } as const
 const NOOP = () => undefined
 
 /**
- * PWA の Web Share Target からの受信。
+ * Receiving from a PWA's Web Share Target.
  *
- * Chromium 系 (Android Chrome / デスクトップ Chrome・Edge) のインストール済み PWA でのみ動く。
- * 起動時の URL を一度読むだけで、以降は何も購読しない。
+ * Works only in an installed Chromium PWA (Chrome on Android, Chrome and Edge on desktop).
+ * It reads the launch URL once and subscribes to nothing afterwards.
  *
- * method は GET のみ扱う。POST (ファイル共有) は Service Worker の登録がアプリ側の
- * 責務になるため、ここでは引き受けない。
+ * GET only. POST — file sharing — makes registering a Service Worker the app's own
+ * responsibility, so it is out of scope here.
  */
 export function shareTargetTransport(options: ShareTargetOptions = {}): InboundTransport {
   return {
@@ -34,7 +34,7 @@ export function shareTargetTransport(options: ShareTargetOptions = {}): InboundT
       const found = readFromLocation(options)
       if (!found) return NOOP
 
-      // start() の呼び出し元が購読を組み終わってから渡す
+      // Hand it over only after the caller of start() has finished wiring up
       let cancelled = false
       queueMicrotask(() => {
         if (cancelled) return
@@ -49,7 +49,7 @@ export function shareTargetTransport(options: ShareTargetOptions = {}): InboundT
   }
 }
 
-/** manifest.json にマージする share_target 断片。params 名のずれを防ぐため受信実装と同じ場所から出す。 */
+/** The share_target fragment to merge into manifest.json. Emitted next to the receiver so the param names cannot drift. */
 export function shareTargetManifest(options: ShareTargetOptions = {}): Record<string, unknown> {
   return {
     action: options.action ?? '/',
@@ -75,7 +75,7 @@ function readFromLocation(
   const url = query.get(names.url)
   const title = query.get(names.title)
 
-  // 本文が無くても、共有された URL だけは渡す価値がある
+  // Even with no body, a shared URL on its own is worth handing over
   const payload = text ?? url
   if (payload === null || payload.length === 0) return undefined
 

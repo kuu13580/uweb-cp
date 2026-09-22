@@ -1,12 +1,12 @@
 import type { ContractRef, JSONSchema } from './types'
 
-/** 封筒フォーマットのバージョン。LLM 応答の識別キーも兼ねる。 */
+/** Envelope format version. Doubles as the key that marks a reply. */
 export const ENVELOPE_VERSION = 1
 
-/** 本文中から封筒を見つけるためのセンチネル。コードフェンスの有無に依存しない。 */
+/** Sentinel for finding an envelope in prose. Does not rely on a code fence being present. */
 export const ENVELOPE_SENTINEL = '"ucp"'
 
-/** コードフェンスに付ける情報文字列。剥がされる前提でヒント扱いとする。 */
+/** Info string on the code fence. A hint only, since chat apps strip it. */
 export const FENCE_INFO = 'json ucp'
 
 export interface RequestEnvelope {

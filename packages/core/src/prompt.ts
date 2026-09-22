@@ -2,58 +2,59 @@ import { ENVELOPE_VERSION, FENCE_INFO, type RequestEnvelope } from './envelope'
 import type { Contract } from './types'
 
 /**
- * 封筒をいつ出させるか。
+ * When the model should emit the envelope.
  *
- * 「何をさせたいか」は instruction (利用者の領分) だが、「いつ封筒が届くか」は
- * アプリが listen を張り続けるか・rid が何ターン生き残るかに直結するので、
- * ライブラリが面倒を見る。
+ * *What* to ask for belongs in instruction, which is the integrator's domain. *When* the
+ * envelope arrives is not: it decides how long the app keeps listening and how many turns the
+ * rid has to survive, so the library owns it.
  */
 export type EmitTiming = 'now' | 'on-approval'
 
 /**
- * 封筒を出したあと、利用者をどこへ戻すか。
+ * Where to send the user once the envelope is out.
  *
- * 封筒が出た時点で利用者は AI アプリの中にいる。放っておくと「コピーして戻る」に
- * 気づかず往復が途切れるため、本文に一言添えさせる。
+ * By then they are inside the AI app. Left alone, they may never realise they have to copy it
+ * and come back, and the round trip stops there — so the model adds one line saying so.
  */
 export interface ReturnTo {
-  /** 利用者が画面上で認識しているアプリの呼び名。 */
+  /** What the user calls the app on screen. */
   name: string
-  /** 戻り先。タップで戻れるよう本文に添える。 */
+  /** Where to go back to, included so it can be tapped. */
   url?: string
 }
 
 export interface BuildPromptOptions<T> {
   contract: Contract<T>
-  /** アプリ側が渡す現在の文脈 (フォームの入力途中の値など)。 */
+  /** Current state the app hands over, such as half-filled form values. */
   context?: unknown
-  /** 利用者が書いた依頼文。省略時は contract.description を使う。 */
+  /** The request the user wrote. Falls back to contract.description. */
   instruction?: string
-  /** 応答の突き合わせに使う相関 ID。 */
+  /** Correlation id used to match the reply. */
   rid: string
-  /** 出力に含める例の最大数。 */
+  /** How many examples to include at most. */
   maxExamples?: number
-  /** 足場の言語。`ja` で始まる値のみ日本語、既定は英語。 */
+  /** Language of the scaffolding. Japanese only for values starting with `ja`; English otherwise. */
   locale?: string
   /**
-   * `now` (既定): その場で封筒を出させる。抽出・変換のようにやり取りの余地が無い用途向け。
-   * `on-approval`: まず内容を詰めさせ、利用者が承認して初めて封筒を出させる。
+   * `now` (default): emit the envelope straight away. For extraction or conversion, where
+   * there is nothing to discuss.
+   * `on-approval`: work the content out first, and emit only once the user approves.
    */
   emit?: EmitTiming
-  /** 指定すると「コピーして戻って貼り付けて」と案内させる。 */
+  /** Set this to have the model say "copy it, come back and paste it". */
   returnTo?: ReturnTo
 }
 
 export interface BuiltPrompt {
-  /** チャットアプリへ渡す本文 (Markdown)。 */
+  /** The body handed to the chat app, as Markdown. */
   text: string
-  /** text に埋め込んだ要求封筒。 */
+  /** The request envelope embedded in text. */
   request: RequestEnvelope
-  /** 概算文字数。ディープリンクの上限判定に使う。 */
+  /** Rough character count, for checking deep-link length limits. */
   length: number
   /**
-   * `emit: 'on-approval'` のとき、利用者が AI に言うべき合図。
-   * アプリの案内文と本文がずれないよう、ここから受け取る。
+   * With `emit: 'on-approval'`, the phrase the user says to the AI.
+   * Read it from here so the app's own wording cannot drift from the prompt's.
    */
   approvalPhrase?: string
 }
@@ -61,10 +62,10 @@ export interface BuiltPrompt {
 const DEFAULT_MAX_EXAMPLES = 2
 
 /**
- * 依頼文・要求封筒・応答テンプレートを 1 本の Markdown に組み立てる。
+ * Assembles the request, the request envelope and the reply template into one Markdown body.
  *
- * ライブラリが引き受けるのは「構造化データとして受け取れること」だけなので、
- * 足場はそのための最小限に留め、何をさせたいかは instruction に委ねる。
+ * All the library promises is that the answer comes back as structured data, so the
+ * scaffolding stays at the minimum that buys — what to ask for is left to instruction.
  */
 export function buildPrompt<T>(options: BuildPromptOptions<T>): BuiltPrompt {
   const {
@@ -118,7 +119,7 @@ function fence(body: string, info: string = FENCE_INFO): string {
   return `\`\`\`${info}\n${body}\n\`\`\``
 }
 
-/** 実 JSON ではなく雛形。data だけが差し替え箇所であることを見せる。 */
+/** A template, not real JSON. Shows that `data` is the only part to fill in. */
 function responseTemplate(rid: string, contract: string, placeholder: string): string {
   return [
     '{',

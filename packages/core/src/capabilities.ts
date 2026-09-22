@@ -4,27 +4,27 @@ import type { InboundTransportId, OutboundTransportId } from './transports/types
 export type ShareTargetState = 'installed' | 'installable' | 'unsupported'
 
 export interface Capabilities {
-  /** navigator.share が使えるか。 */
+  /** Whether navigator.share is available. */
   webShare: boolean
   /**
-   * navigator.canShare が使えるか。実際にファイルを送れるかは
-   * canShare({ files }) で都度確かめる必要があるため、ここでは問い合わせ口の有無だけを見る。
+   * Whether navigator.canShare is available. Whether files can actually be shared has to be
+   * asked per payload with canShare({ files }), so this only reports that the query exists.
    */
   canShareQuery: boolean
   clipboardWrite: boolean
-  /** navigator.clipboard.readText。権限・ジェスチャ制約が強いので paste イベントを優先する。 */
+  /** navigator.clipboard.readText. Permission and gesture rules are strict, so prefer the paste event. */
   clipboardRead: boolean
-  /** paste イベント経由の受信。ブラウザなら常に true。 */
+  /** Receiving through the paste event. Always true in a browser. */
   pasteEvent: boolean
   shareTarget: ShareTargetState
-  /** display-mode: standalone 等でインストール済みと判定できたか。 */
+  /** Whether the app looks installed, via display-mode: standalone and friends. */
   installedPwa: boolean
 }
 
 export interface TransportRecommendation {
-  /** 上から順に試すべき OutboundTransport の id。 */
+  /** OutboundTransport ids to try, in order. */
   outbound: OutboundTransportId[]
-  /** 有効化すべき InboundTransport の id。paste は常に含まれる。 */
+  /** InboundTransport ids to enable. paste is always included. */
   inbound: InboundTransportId[]
 }
 
@@ -38,7 +38,7 @@ const NONE: Capabilities = {
   installedPwa: false,
 }
 
-/** 実行環境で使える経路を調べる。SSR では全て false を返し、例外を投げない。 */
+/** What this environment can do. Reports everything as false during SSR, and never throws. */
 export function detectCapabilities(): Capabilities {
   if (typeof globalThis.navigator === 'undefined' || typeof globalThis.document === 'undefined') {
     return { ...NONE }
@@ -61,9 +61,10 @@ export function detectCapabilities(): Capabilities {
 }
 
 /**
- * 推奨経路。outbound は上から順に試すフォールバック列、inbound は同時に有効化する一覧。
+ * The recommended transports: outbound is a fallback chain tried in order, inbound is the set
+ * to enable at once.
  *
- * deep-link は送信先プロバイダの指定が要るため既定には含めない。
+ * deep-link is left out of the defaults because it needs a target provider to be named.
  */
 export function recommendTransports(capabilities: Capabilities): TransportRecommendation {
   const outbound: OutboundTransportId[] = []
@@ -84,17 +85,17 @@ function detectInstalledPwa(): boolean {
       try {
         if (globalThis.matchMedia(`(display-mode: ${mode})`).matches) return true
       } catch {
-        // matchMedia は未知のクエリで投げる実装があるため、判定不能として次へ
+        // Some implementations throw on an unknown query, so treat it as undecidable and move on
       }
     }
   }
-  // iOS Safari のホーム画面追加は display-mode を返さず、この非標準プロパティだけが手がかり
+  // Add-to-home-screen on iOS Safari reports no display-mode; this non-standard property is the only clue
   return isTrue(globalThis.navigator, 'standalone')
 }
 
 /**
- * Web Share Target は Chromium 系のインストール済み PWA でしか使えず、機能検出の口が無い。
- * Chromium にしか存在しない `navigator.userAgentData` の有無を代理指標にする。
+ * Web Share Target only works in an installed Chromium PWA, and there is nothing to feature
+ * detect. `navigator.userAgentData` exists only in Chromium, so it stands in as the proxy.
  */
 function detectShareTarget(installedPwa: boolean): ShareTargetState {
   const nav: unknown = globalThis.navigator

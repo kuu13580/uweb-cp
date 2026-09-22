@@ -1,8 +1,8 @@
 import { callMethod } from './reflect'
 
 /**
- * 相関 ID。LLM に書き写してもらう前提なので短くする。
- * 衝突が問題になるのは「同じ利用者の応答待ち一覧の中」だけなので、この長さで足りる。
+ * Correlation id. Kept short because the model has to copy it out by hand.
+ * Collisions only matter inside one user's pending list, so this length is enough.
  */
 export function createRid(): string {
   const uuid = callMethod(globalThis.crypto, 'randomUUID', [])

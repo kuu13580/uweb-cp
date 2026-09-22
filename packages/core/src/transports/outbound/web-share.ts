@@ -2,7 +2,7 @@ import { UcpError } from '../../errors'
 import { callMethod, hasMethod } from '../../reflect'
 import type { OutboundTransport } from '../types'
 
-/** navigator.share による送信。モバイルでの主経路。 */
+/** Sending through navigator.share. The primary path on mobile. */
 export function webShareTransport(): OutboundTransport {
   return {
     id: 'web-share',
@@ -13,7 +13,7 @@ export function webShareTransport(): OutboundTransport {
 
     async deliver(payload) {
       if (!hasMethod(globalThis.navigator, 'share')) {
-        throw new UcpError('transport-unavailable', 'navigator.share が使えない')
+        throw new UcpError('transport-unavailable', 'navigator.share is unavailable')
       }
 
       const data = {
@@ -26,15 +26,15 @@ export function webShareTransport(): OutboundTransport {
         await callMethod(globalThis.navigator, 'share', [data])
       } catch (cause) {
         if (isAbort(cause)) {
-          throw new UcpError('transport-aborted', '共有シートが閉じられた', { cause })
+          throw new UcpError('transport-aborted', 'the share sheet was dismissed', { cause })
         }
-        throw new UcpError('transport-unavailable', '共有に失敗した', { cause })
+        throw new UcpError('transport-unavailable', 'sharing failed', { cause })
       }
     },
   }
 }
 
-/** 利用者が共有シートを閉じただけの場合。失敗として扱わないよう区別する。 */
+/** The user merely dismissed the share sheet. Told apart so it is not treated as a failure. */
 function isAbort(cause: unknown): boolean {
   return cause instanceof Error && cause.name === 'AbortError'
 }

@@ -3,24 +3,24 @@ import { ENVELOPE_VERSION, isResponseEnvelope, type ResponseEnvelope } from './e
 import { findFencedRanges, findKeyedObjects, findObjects, isInside, type Range } from './scan'
 import type { Contract, Issue, Result } from './types'
 
-/** 封筒がどう見つかったか。デバッグとテレメトリ用。 */
+/** How the envelope was found. For debugging and telemetry. */
 export type ExtractionVia = 'fenced' | 'sentinel-scan' | 'bare-json'
 
 export interface ExtractOptions<T> {
   contract?: Contract<T>
   /**
-   * 送信時の相関 ID。一致する封筒を優先するが、LLM が落とすことがあるため
-   * 絞り込みには使わない。一致しなかった場合は警告 issue を付けて続行する。
+   * The correlation id used when sending. A matching envelope wins, but this never filters:
+   * models drop the field. A mismatch is reported as a warning issue and processing continues.
    */
   rid?: string
-  /** 封筒が見つからない場合に、素の JSON を data とみなすフォールバックを許可する。 */
+  /** Allow falling back to treating a bare JSON object as `data` when no envelope is found. */
   allowBareJson?: boolean
 }
 
 export interface Extraction<T> {
   envelope: ResponseEnvelope<T>
   via: ExtractionVia
-  /** 致命的ではない気づき。rid 不一致など。 */
+  /** Non-fatal observations, such as a rid mismatch. */
   issues: readonly Issue[]
 }
 
@@ -29,15 +29,15 @@ interface Candidate {
   via: ExtractionVia
 }
 
-/** LLM 応答テキストから応答封筒を出現順に取り出す。 */
+/** Pulls response envelopes out of a reply, in the order they appear. */
 export function extractResponses(text: string): ResponseEnvelope[] {
   return collect(text).candidates.map((c) => c.envelope)
 }
 
 /**
- * 抽出 + 契約の突き合わせ + `contract.validate` による検証。
+ * Extraction, contract matching and validation through `contract.validate`.
  *
- * Standard Schema の検証は非同期を許すため、全体が Promise を返す。
+ * Standard Schema allows validation to be asynchronous, so the whole call returns a Promise.
  */
 export async function parseResponse<T>(
   text: string,
@@ -55,7 +55,10 @@ export async function parseResponse<T>(
       return {
         ok: false,
         code: 'contract-mismatch',
-        issues: [...issues, { message: `契約が一致しない: 期待 ${contract.ref} / 受信 ${seen}` }],
+        issues: [
+          ...issues,
+          { message: `contract mismatch: expected ${contract.ref}, got ${seen}` },
+        ],
       }
     }
     pool = matching
@@ -65,7 +68,7 @@ export async function parseResponse<T>(
 
   if (!chosen && allowBareJson) {
     if (contract) chosen = bareCandidate(text, contract)
-    else issues.push({ message: 'allowBareJson には contract が必要' })
+    else issues.push({ message: 'allowBareJson needs a contract' })
   }
 
   if (!chosen) {
@@ -74,7 +77,7 @@ export async function parseResponse<T>(
 
   if (rid && chosen.envelope.rid !== rid) {
     issues.push({
-      message: `rid が一致しない: 期待 ${rid} / 受信 ${chosen.envelope.rid ?? 'なし'}`,
+      message: `rid mismatch: expected ${rid}, got ${chosen.envelope.rid ?? 'none'}`,
     })
   }
 
@@ -90,7 +93,7 @@ export async function parseResponse<T>(
 interface Collected {
   candidates: Candidate[]
   issues: Issue[]
-  /** 封筒らしきものは見つかったが形が違った件数。no-envelope と区別するために数える。 */
+  /** How many envelope-shaped objects had the wrong shape. Counted to tell this apart from no-envelope. */
   malformed: number
 }
 
@@ -105,13 +108,13 @@ function collect(text: string): Collected {
     if (typeof value !== 'object' || value === null || !('ucp' in value)) continue
 
     if (value.ucp !== ENVELOPE_VERSION) {
-      issues.push({ message: `未対応の封筒バージョン: ${String(value.ucp)}` })
+      issues.push({ message: `unsupported envelope version: ${String(value.ucp)}` })
       malformed++
       continue
     }
     if (!isResponseEnvelope(value)) continue
     if (typeof value.contract !== 'string' || !('data' in value)) {
-      issues.push({ message: '応答封筒に contract または data がない' })
+      issues.push({ message: 'response envelope is missing contract or data' })
       malformed++
       continue
     }
@@ -126,7 +129,7 @@ function viaOf(fences: readonly Range[], at: number): ExtractionVia {
   return isInside(fences, at) ? 'fenced' : 'sentinel-scan'
 }
 
-/** rid 一致 → 最後に出現したもの、の順で選ぶ。契約での絞り込みは呼び出し側で済ませておく。 */
+/** Prefers a rid match, then the last one to appear. Filtering by contract happens in the caller. */
 function pick(candidates: readonly Candidate[], rid?: string): Candidate | undefined {
   if (rid) {
     const byRid = candidates.filter((c) => c.envelope.rid === rid)
@@ -153,7 +156,7 @@ function bareCandidate<T>(text: string, contract: Contract<T>): Candidate | unde
 async function validate<T>(data: unknown, contract?: Contract<T>): Promise<Result<T>> {
   const standard = contract?.validate?.['~standard']
   if (!standard) {
-    // validate 未指定の契約は「型は利用者が保証する」という宣言なので、ここは素通しする
+    // A contract without validate declares that the caller vouches for the type, so let it pass
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     return { ok: true, value: data as T }
   }

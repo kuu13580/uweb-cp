@@ -1,17 +1,17 @@
 /**
- * テキストから JSON オブジェクトの範囲を取り出す低レベル走査。
+ * Low-level scanning for the extent of a JSON object inside text.
  *
- * LLM の返信は地の文・未対応の括弧・引用符を含むため、テキスト全体を先頭から
- * 字句解析すると 1 個の野良クォートで以降がすべて壊れる。そこで走査は必ず
- * 「候補となる `{` から前方へ」だけ行い、地の文を解釈しない。
+ * A reply contains prose, unbalanced brackets and stray quotes, so lexing the whole text
+ * from the start means one loose quote corrupts everything after it. Scanning therefore
+ * only ever runs forward from a candidate `{`, and never interprets the prose.
  */
 
 export interface ObjectSpan {
-  /** `{` の位置。 */
+  /** Index of the `{`. */
   start: number
-  /** `}` の次の位置。 */
+  /** Index just past the `}`. */
   end: number
-  /** `text.slice(start, end)` をパースした結果。 */
+  /** The result of parsing `text.slice(start, end)`. */
   value: unknown
 }
 
@@ -21,8 +21,8 @@ export interface Range {
 }
 
 /**
- * `"<key>"` をアンカーに、それを直接持つオブジェクトの範囲を出現順に返す。
- * 入れ子の同名キーは外側が勝つ。
+ * Anchored on `"<key>"`, returns the extent of each object that owns that key, in order.
+ * Where the same key nests, the outer object wins.
  */
 export function findKeyedObjects(text: string, key: string): ObjectSpan[] {
   const needle = `"${key}"`
@@ -37,7 +37,7 @@ export function findKeyedObjects(text: string, key: string): ObjectSpan[] {
   return dropContained(found)
 }
 
-/** 前方から順に、パースできるオブジェクトの範囲を返す。入れ子は外側のみ。 */
+/** Every parseable object extent, front to back. Nested objects yield the outer one only. */
 export function findObjects(text: string): ObjectSpan[] {
   const found: ObjectSpan[] = []
 
@@ -51,7 +51,7 @@ export function findObjects(text: string): ObjectSpan[] {
   return found
 }
 
-/** コードフェンスの内側の範囲。閉じられていないフェンスは末尾までとみなす。 */
+/** The ranges inside code fences. An unclosed fence is taken to run to the end. */
 export function findFencedRanges(text: string): Range[] {
   const fence = /^[ \t]{0,3}(?:`{3,}|~{3,})[^\n]*$/gm
   const ranges: Range[] = []
@@ -73,7 +73,7 @@ export function isInside(ranges: readonly Range[], at: number): boolean {
   return ranges.some((r) => at >= r.start && at < r.end)
 }
 
-/** `sentinelAt` を含むオブジェクトを、近い `{` から順に試して最初に成立したものを返す。 */
+/** The object containing `sentinelAt`, trying the nearest `{` first and taking the first that parses. */
 function objectContaining(text: string, sentinelAt: number, key: string): ObjectSpan | undefined {
   let open = text.lastIndexOf('{', sentinelAt)
 
@@ -81,7 +81,7 @@ function objectContaining(text: string, sentinelAt: number, key: string): Object
     const span = objectAt(text, open)
     if (span && span.end > sentinelAt && hasKey(span.value, key)) return span
 
-    // lastIndexOf は負の fromIndex を 0 に丸めるため、0 まで来たら自前で打ち切る
+    // lastIndexOf clamps a negative fromIndex to 0, so stop here rather than loop forever
     if (open === 0) return undefined
     open = text.lastIndexOf('{', open - 1)
   }
@@ -102,7 +102,7 @@ function objectAt(text: string, start: number): ObjectSpan | undefined {
   return { start, end, value }
 }
 
-/** 文字列リテラルとエスケープを跨いで `{` の対応する `}` の次の位置を返す。 */
+/** Index just past the `}` matching `{`, stepping over string literals and escapes. */
 function balancedEnd(text: string, start: number): number | undefined {
   if (text[start] !== '{') return undefined
 
@@ -128,7 +128,7 @@ function balancedEnd(text: string, start: number): number | undefined {
   return undefined
 }
 
-/** `"key"` の直後が `:` であること。値として現れた同名文字列を除くため。 */
+/** Whether `"key"` is followed by `:`, to reject the same string appearing as a value. */
 function isKeyPosition(text: string, from: number): boolean {
   for (let i = from; i < text.length; i++) {
     const ch = text[i]

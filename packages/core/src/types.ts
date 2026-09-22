@@ -1,15 +1,15 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { UcpErrorCode } from './errors'
 
-/** LLM に渡す仕様記述。JSON Schema draft 2020-12 のサブセットを想定する。 */
+/** The shape description handed to the model. Assumed to be a subset of JSON Schema draft 2020-12. */
 export type JSONSchema = Record<string, unknown>
 
-/** `<id>@<version>` 形式の契約参照子。封筒の contract フィールドに入る。 */
+/** Contract reference, `<id>@<version>`. Carried in the envelope's contract field. */
 export type ContractRef = string
 
 /**
- * アプリが「LLM から受け取りたい構造化データ」の定義。
- * jsonSchema は送信プロンプト用、validate は受信データ検証用で役割が異なる。
+ * What the app wants back from the model, declared once.
+ * jsonSchema describes it in the outgoing prompt; validate guards the incoming data.
  */
 export interface Contract<T> {
   readonly id: string
@@ -38,8 +38,8 @@ export interface Issue {
 }
 
 /**
- * 失敗時は「何が起きたか」の単一コードと、その内訳の issues を返す。
- * issues は成功時にも非致命的な警告として付くため、失敗の判別は code で行う。
+ * A failure carries one code for what went wrong, plus issues for the detail.
+ * issues also appear on success as non-fatal warnings, so branch on code, never on issues.
  */
 export type Result<T> =
   | { ok: true; value: T }

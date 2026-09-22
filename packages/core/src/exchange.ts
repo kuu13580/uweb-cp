@@ -23,22 +23,23 @@ const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000
 
 export interface ExchangeOptions<T> {
   contract: Contract<T>
-  /** 未指定なら detectCapabilities() から推奨順に選ぶ。 */
+  /** Left out, the order comes from detectCapabilities(). */
   outbound?: OutboundTransport[]
   inbound?: InboundTransport[]
   store?: PendingStore
-  /** 応答待ちの要求を破棄するまでの時間。既定 24h。 */
+  /** How long a pending request survives before it is discarded. Default 24h. */
   ttlMs?: number
-  /** buildPrompt へそのまま渡す。 */
+  /** Passed straight through to buildPrompt. */
   locale?: string
-  /** 封筒を出させる時機。既定は `now`。 */
+  /** When the envelope should be emitted. Defaults to `now`. */
   emit?: EmitTiming
   /**
-   * 封筒を出したあとの戻り先の案内。
-   * 文面は利用者に見えるので、出すかどうかも呼び名も実装者が決める。未指定なら何も添えない。
+   * How to point the user back after the envelope.
+   * The wording is visible to them, so whether to say anything at all — and what to call the
+   * app — is the integrator's call. Left out, nothing is added.
    */
   returnTo?: ReturnTo
-  /** 封筒が見つからないとき、素の JSON を data とみなすことを許す。 */
+  /** Allow a bare JSON object to count as `data` when no envelope is found. */
   allowBareJson?: boolean
 }
 
@@ -49,31 +50,31 @@ export interface SendInput {
 
 export interface SendResult {
   rid: string
-  /** 実際に使われた OutboundTransport の id。 */
+  /** The id of the OutboundTransport that actually delivered. */
   via: OutboundTransportId
   prompt: string
-  /** `emit: 'on-approval'` のとき、利用者が AI に言うべき合図。 */
+  /** With `emit: 'on-approval'`, the phrase the user says to the AI. */
   approvalPhrase?: string
 }
 
-/** 1 契約に対する送受信のまとまり。ライブラリ利用者が普段触るのはこれだけ。 */
+/** Sending and receiving for one contract. In normal use this is the only surface you touch. */
 export interface Exchange<T> {
   readonly contract: Contract<T>
   /**
-   * 送信せずプロンプト文字列だけ得る (自前 UI 用)。
-   * 毎回新しい rid を振るだけで応答待ちには登録しないので、実際に送るなら send を使う。
+   * The prompt text without sending it, for driving your own UI.
+   * Each call mints a fresh rid but registers nothing as pending, so use send to actually send.
    */
   preview(input?: SendInput): string
   send(input?: SendInput): Promise<SendResult>
-  /** 任意のテキストを受け取って検証済みデータにする。 */
+  /** Takes arbitrary text and turns it into validated data. */
   accept(text: string): Promise<Result<Extraction<T>>>
   /**
-   * クリップボードを読んで取り込む。
-   * 利用者の操作 (ボタン押下など) の中から呼ぶこと。環境によっては権限確認が出る。
-   * 読めなかったときは UcpError を投げる (拒否は `transport-aborted`)。
+   * Reads the clipboard and imports it.
+   * Call this from inside a user gesture, such as a button press; some environments prompt for
+   * permission. Throws UcpError when the read fails, with `transport-aborted` for a refusal.
    */
   pull(): Promise<Result<Extraction<T>>>
-  /** inbound transport を購読する。解除関数を返す。 */
+  /** Subscribes to the inbound transports. Returns the unsubscribe function. */
   listen(onResult: (result: Result<Extraction<T>>) => void): () => void
 }
 
@@ -106,7 +107,7 @@ export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
       const built = prompt(rid, input)
       const transports = options.outbound ?? defaultOutbound()
 
-      // 送信の途中で画面が離れることがあるので、配送前に応答待ちへ登録する
+      // Delivery can navigate the page away, so register as pending before delivering
       await store.put({
         rid,
         contract: contract.ref,
@@ -162,8 +163,9 @@ export function createExchange<T>(options: ExchangeOptions<T>): Exchange<T> {
 }
 
 /**
- * 使える経路を上から順に試す。
- * 利用者が共有シートを閉じただけのときは次を試さない — 押し付けになるため。
+ * Tries the available transports in order.
+ * When the user merely closed the share sheet, the next one is not tried — that would be
+ * forcing the round trip on them.
  */
 async function deliver(
   transports: readonly OutboundTransport[],
@@ -171,7 +173,7 @@ async function deliver(
 ): Promise<OutboundTransportId> {
   const tried: string[] = []
 
-  // 逐次でなければ意味がない: 1 つ成功したら後続は送らない (並列化すると多重送信になる)
+  // Sequential is the point: once one succeeds the rest must not run, or the user sends twice
   for (const transport of transports) {
     // oxlint-disable-next-line no-await-in-loop
     if (!(await transport.isAvailable())) continue
@@ -188,7 +190,7 @@ async function deliver(
 
   throw new UcpError(
     'transport-unavailable',
-    tried.length > 0 ? `送信経路が全て失敗した: ${tried.join(', ')}` : '使える送信経路が無い',
+    tried.length > 0 ? `every transport failed: ${tried.join(', ')}` : 'no usable transport',
   )
 }
 
@@ -196,7 +198,7 @@ const OUTBOUND_FACTORIES: Record<OutboundTransportId, () => OutboundTransport[]>
   'web-share': () => [webShareTransport()],
   clipboard: () => [clipboardTransport()],
   download: () => [downloadTransport()],
-  // 宛先テンプレートが要るので既定では組み立てられない
+  // Needs a target template, so it cannot be built by default
   'deep-link': () => [],
 }
 

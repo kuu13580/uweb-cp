@@ -4,10 +4,10 @@ import type { InboundTransport } from '../types'
 const NOOP = () => undefined
 
 /**
- * paste イベントによる受信。全ブラウザで動く唯一の経路なので既定とする。
+ * Receiving through the paste event. The default, being the only path that works everywhere.
  *
- * navigator.clipboard.readText は権限とユーザー操作の制約が強く暗黙の読み取りに
- * 使えないため、利用者の貼り付け操作そのものを拾う。
+ * navigator.clipboard.readText is too constrained by permissions and gestures to read
+ * implicitly, so this picks up the user's own paste instead.
  */
 export function pasteTransport(target?: EventTarget): InboundTransport {
   return {

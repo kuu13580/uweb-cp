@@ -4,7 +4,7 @@ import type { OutboundTransport } from '../types'
 
 const DEFAULT_FILENAME = 'uweb-cp.md'
 
-/** Blob を .md として保存させる最終フォールバック。共有もクリップボードも無い環境向け。 */
+/** Last resort: save a Blob as .md. For environments with neither sharing nor a clipboard. */
 export function downloadTransport(filename: string = DEFAULT_FILENAME): OutboundTransport {
   return {
     id: 'download',
@@ -13,10 +13,10 @@ export function downloadTransport(filename: string = DEFAULT_FILENAME): Outbound
       return typeof globalThis.document !== 'undefined' && hasMethod(URL, 'createObjectURL')
     },
 
-    // 例外は必ず reject として返す (呼び出し側は Promise 前提でフォールバックする)
+    // Failures must surface as a rejection, since the caller's fallback chain awaits this
     async deliver(payload) {
       if (typeof globalThis.document === 'undefined' || !hasMethod(URL, 'createObjectURL')) {
-        throw new UcpError('transport-unavailable', 'ダウンロードできる環境ではない')
+        throw new UcpError('transport-unavailable', 'this environment cannot download')
       }
 
       const url = URL.createObjectURL(new Blob([payload.text], { type: 'text/markdown' }))
@@ -26,7 +26,7 @@ export function downloadTransport(filename: string = DEFAULT_FILENAME): Outbound
         anchor.download = filename
         anchor.click()
       } finally {
-        // click は同期に処理が始まるので、ここで解放してよい
+        // click starts synchronously, so releasing here is safe
         URL.revokeObjectURL(url)
       }
 

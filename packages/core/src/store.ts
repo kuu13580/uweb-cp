@@ -8,23 +8,23 @@ export interface PendingRequest {
 }
 
 /**
- * 送信済みで応答待ちの要求を保持する。
- * Web Share Target は新規ナビゲーションで開くため sessionStorage では消える。
- * 既定実装は localStorage を使う。
+ * Holds requests that have been sent and are waiting for a reply.
+ * Web Share Target opens as a fresh navigation, which wipes sessionStorage, so the default
+ * implementation uses localStorage.
  */
 export interface PendingStore {
   put(request: PendingRequest): Promise<void>
   take(rid: string): Promise<PendingRequest | undefined>
-  /** rid が失われた応答のためのフォールバック。contract 一致の最新を返す。 */
+  /** Fallback for a reply that lost its rid: the newest request matching the contract. */
   latest(contract?: ContractRef): Promise<PendingRequest | undefined>
-  /** 新しい順。 */
+  /** Newest first. */
   list(): Promise<PendingRequest[]>
   prune(maxAgeMs: number): Promise<void>
 }
 
 export interface LocalStorageStoreOptions {
   namespace?: string
-  /** 超えた分は古いものから捨てる。 */
+  /** Entries beyond this are dropped, oldest first. */
   maxEntries?: number
 }
 
@@ -32,9 +32,9 @@ const DEFAULT_NAMESPACE = 'uweb-cp'
 const DEFAULT_MAX_ENTRIES = 20
 
 /**
- * localStorage 上の実装。
- * プライベートウィンドウやサイトデータ遮断では読み書きが投げるため、
- * 使えないと分かった時点でメモリ実装に落ちる (状態は失われるが動作は続く)。
+ * The localStorage-backed implementation.
+ * A private window or blocked site data makes reads and writes throw, so the moment it turns
+ * out to be unusable this falls back to the in-memory store: state is lost, behaviour is not.
  */
 export function createLocalStorageStore(options: LocalStorageStoreOptions = {}): PendingStore {
   const key = `${options.namespace ?? DEFAULT_NAMESPACE}:pending`
@@ -104,7 +104,7 @@ export function createLocalStorageStore(options: LocalStorageStoreOptions = {}):
   }
 }
 
-/** localStorage が使えない環境向けのメモリ実装。 */
+/** In-memory implementation, for environments without a usable localStorage. */
 export function createMemoryStore(): PendingStore {
   let entries: PendingRequest[] = []
 
@@ -148,7 +148,7 @@ function newest(
   return byNewest(scoped).at(0)
 }
 
-/** 壊れた保存値は「空」として扱う。読めないだけで機能を止めない。 */
+/** A corrupted stored value counts as empty. Being unable to read it must not stop anything. */
 function toRequests(raw: string): PendingRequest[] {
   let parsed: unknown
   try {

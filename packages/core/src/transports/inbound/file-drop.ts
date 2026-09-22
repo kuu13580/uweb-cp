@@ -1,10 +1,10 @@
 import { callMethod, getProp } from '../../reflect'
 import type { InboundHandler, InboundTransport } from '../types'
 
-// これを止めないとブラウザがファイルを開いてしまい、drop が発火しない
+// Without this the browser opens the file and drop never fires
 const onDragOver = (event: Event) => event.preventDefault()
 
-/** テキストファイルのドラッグ&ドロップによる受信。デスクトップの補助。 */
+/** Receiving a dragged-and-dropped text file. A desktop convenience. */
 export function fileDropTransport(target: EventTarget): InboundTransport {
   return {
     id: 'file-drop',
@@ -31,7 +31,7 @@ async function deliver(event: Event, handler: InboundHandler): Promise<void> {
   if (text) handler(text, { source: 'file-drop' })
 }
 
-/** 選択テキストのドロップを先に見て、無ければ最初のファイルを読む。 */
+/** Prefers dropped selection text, falling back to reading the first file. */
 async function droppedText(event: Event): Promise<string | undefined> {
   const transfer = getProp(event, 'dataTransfer')
 
