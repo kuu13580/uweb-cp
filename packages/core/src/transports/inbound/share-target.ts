@@ -7,8 +7,8 @@ export interface ShareTargetOptions {
   /** Query names, matching share_target.params in the manifest. */
   params?: { title?: string; text?: string; url?: string }
   /**
-   * Strip the query from the URL once imported. Default true.
-   * Leaving it in re-imports the same payload on every reload.
+   * Strip the shared params from the URL once imported. Default true.
+   * Leaving them in re-imports the same payload on every reload.
    */
   cleanUrl?: boolean
 }
@@ -38,7 +38,7 @@ export function shareTargetTransport(options: ShareTargetOptions = {}): InboundT
       let cancelled = false
       queueMicrotask(() => {
         if (cancelled) return
-        if (options.cleanUrl !== false) stripQuery()
+        if (options.cleanUrl !== false) stripSharedParams({ ...DEFAULT_PARAMS, ...options.params })
         handler(found.text, found.meta)
       })
 
@@ -89,9 +89,17 @@ function readFromLocation(
   }
 }
 
-function stripQuery(): void {
+/** Removes only the shared params: the rest of the query belongs to the app. */
+function stripSharedParams(names: { title: string; text: string; url: string }): void {
   const location = getProp(globalThis, 'location')
   const pathname = getProp(location, 'pathname')
+  const search = getProp(location, 'search')
   if (typeof pathname !== 'string') return
-  callMethod(getProp(globalThis, 'history'), 'replaceState', [null, '', pathname])
+
+  const kept = new URLSearchParams(typeof search === 'string' ? search : '')
+  for (const name of [names.title, names.text, names.url]) kept.delete(name)
+
+  const query = kept.toString()
+  const next = query.length > 0 ? `${pathname}?${query}` : pathname
+  callMethod(getProp(globalThis, 'history'), 'replaceState', [null, '', next])
 }

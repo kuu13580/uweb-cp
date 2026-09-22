@@ -188,6 +188,29 @@ describe('shareTargetTransport', () => {
     expect(replaceState).toHaveBeenCalledWith(null, '', '/import')
   })
 
+  it("leaves the app's own params alone", async () => {
+    // アプリが自分で使っているクエリまで消すと、共有から起動した回だけ状態が失われる
+    stubLocation('?debug&text=hello&lang=en&title=t', '/import')
+    const replaceState = vi.fn()
+    vi.stubGlobal('history', { replaceState })
+
+    shareTargetTransport().start(() => undefined)
+    await tick()
+
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/import?debug=&lang=en')
+  })
+
+  it('strips renamed params, not the default names', async () => {
+    stubLocation('?body=hello&text=keep', '/import')
+    const replaceState = vi.fn()
+    vi.stubGlobal('history', { replaceState })
+
+    shareTargetTransport({ params: { text: 'body' } }).start(() => undefined)
+    await tick()
+
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/import?text=keep')
+  })
+
   it('keeps the query when asked to', async () => {
     stubLocation('?text=hello')
     const replaceState = vi.fn()
