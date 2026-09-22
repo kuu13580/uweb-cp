@@ -52,6 +52,9 @@ function log(message: string, kind: 'ok' | 'warn' | 'bad' | '' = ''): void {
   if (status) {
     status.textContent = message
     status.className = `status ${kind}`
+    // スマホではカードが画面より高く、状態行が送信ボタンの 200px 以上下に来る。
+    // nearest なので既に見えていれば動かない
+    status.scrollIntoView({ block: 'nearest' })
   }
   console.debug(`[uweb-cp] ${message}`)
 }
@@ -288,8 +291,26 @@ renderDemo()
 
 const capabilities = detectCapabilities()
 
-// 実機検証用。公開ページには出さず、?debug のときだけ見せる
-if (new URLSearchParams(location.search).has('debug')) {
+/**
+ * 実機検証用。公開ページには出さず、?debug のときだけ見せる。
+ *
+ * インストール済み PWA は start_url で開くので URL にクエリを足せない。ブラウザで一度
+ * ?debug を開けば同じオリジンの localStorage 越しにアプリ側でも出る。?debug=0 で消す。
+ */
+const DEBUG_KEY = 'uweb-cp:debug'
+
+function debugWanted(): boolean {
+  const param = new URLSearchParams(location.search).get('debug')
+  try {
+    if (param === '0') localStorage.removeItem(DEBUG_KEY)
+    else if (param !== null) localStorage.setItem(DEBUG_KEY, '1')
+    return localStorage.getItem(DEBUG_KEY) !== null
+  } catch {
+    return param !== null && param !== '0'
+  }
+}
+
+if (debugWanted()) {
   const caps = maybe('caps')
   if (caps) caps.hidden = false
   renderCapabilities(capabilities)
