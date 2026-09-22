@@ -5,6 +5,8 @@ name: Release
 on:
   push:
     tags: ['uweb-cp@*']
+  # OIDC の疎通だけ確かめたいとき用。公開済みの版なら「既にある」で止まる
+  workflow_dispatch:
 
 permissions:
   contents: read
