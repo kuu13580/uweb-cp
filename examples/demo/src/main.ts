@@ -43,11 +43,17 @@ function button(id: string): HTMLButtonElement {
   throw new Error(`#${id} はボタンではない`)
 }
 
+/**
+ * 状態は 1 行だけ見せる。取り込めなかった理由が分からないのが一番困るので、
+ * 表示自体は残す。詳細は console に出す。
+ */
 function log(message: string, kind: 'ok' | 'warn' | 'bad' | '' = ''): void {
-  const line = document.createElement('li')
-  line.className = kind
-  line.textContent = `${new Date().toLocaleTimeString('ja-JP')}  ${message}`
-  el('log').prepend(line)
+  const status = maybe('status')
+  if (status) {
+    status.textContent = message
+    status.className = `status ${kind}`
+  }
+  console.debug(`[uweb-cp] ${message}`)
 }
 
 // --- ページの器 ---------------------------------------------------------------
@@ -168,7 +174,7 @@ function renderDemo(): void {
           <input id="topic" value="チーム内 Wiki に足す機能" aria-label="お題" />
           <button id="send">AI に送る</button>
         </div>
-        <p class="hint">共有シートかクリップボードで送り出します。AI と相談して、決まったら「確定」と送ってください。</p>
+        <p class="hint">AI と相談して、決まったら「確定」と送ってください。</p>
       </div>
       <div>
         <p class="step in">2 受け取る</p>
@@ -180,28 +186,9 @@ function renderDemo(): void {
       </div>
     </div>
 
+    <p id="status" class="status" role="status"></p>
     <div id="result-card" hidden><div id="result"></div></div>
-
-    <details>
-      <summary>細かく指定する</summary>
-      <div class="more">
-        <div class="row"><span class="k">件数</span><input id="count" type="number" min="3" max="20" value="8" /></div>
-        <div class="row"><span class="k">時機</span><select id="emit">
-          <option value="on-approval">承認してから出す (on-approval)</option>
-          <option value="now">その場で出す (now)</option>
-        </select></div>
-        <textarea id="instruction">実装が重すぎないものを優先してください。</textarea>
-        <div class="row"><button id="toggle-preview" class="sub">送るプロンプトを見る</button></div>
-        <pre id="preview" hidden></pre>
-        <div id="drop">テキストファイルをドロップ</div>
-      </div>
-    </details>
-
-    <details>
-      <summary>この端末で使える経路とログ</summary>
-      <div class="caps" id="caps"></div>
-      <ul id="log"></ul>
-    </details>`
+    <div id="caps" class="caps" hidden></div>`
 }
 
 function renderCapabilities(capabilities: Capabilities): void {
@@ -231,50 +218,65 @@ function renderCapabilities(capabilities: Capabilities): void {
   )
 }
 
-const EFFORT: Record<IdeaList['ideas'][number]['effort'], string> = {
-  small: '小',
-  medium: '中',
-  large: '大',
+const EFFORT_ORDER = ['small', 'medium', 'large'] as const
+
+/**
+ * 結果は表で出し、列見出しに実際のフィールド名を使う。
+ * 「文章が返ってきた」ではなく「型のある配列が届いた」ことを、操作を増やさずに示すため。
+ * data は LLM 由来なので、文字列は必ず textContent として置く。
+ */
+function renderIdeas(list: IdeaList): void {
+  const counts = EFFORT_ORDER.map(
+    (level) => `${level} ${list.ideas.filter((i) => i.effort === level).length}`,
+  ).join(' / ')
+
+  const summary = document.createElement('p')
+  summary.className = 'summary'
+  summary.append(
+    tag('code', ideaListContract.ref),
+    tag('span', ' ✓ 検証済み', 'ok'),
+    tag('span', `topic: ${list.topic}`, 'cell'),
+    tag('span', `ideas: ${list.ideas.length} 件`, 'cell'),
+    tag('span', `effort: ${counts}`, 'cell'),
+  )
+
+  const head = document.createElement('tr')
+  for (const name of ['title', 'why', 'effort']) head.append(tag('th', name))
+
+  const body = document.createElement('tbody')
+  for (const entry of list.ideas) {
+    const row = document.createElement('tr')
+    row.append(
+      cell('title', entry.title, 'title'),
+      cell('why', entry.why ?? '—', 'note'),
+      cell('effort', entry.effort, `effort ${entry.effort}`),
+    )
+    body.append(row)
+  }
+
+  const table = document.createElement('table')
+  table.className = 'data'
+  const thead = document.createElement('thead')
+  thead.append(head)
+  table.append(thead, body)
+
+  el('result').replaceChildren(summary, table)
+  el('result-card').hidden = false
 }
 
-/** data は LLM 由来なので、文字列は必ず textContent として置く。 */
-function renderIdeas(list: IdeaList): void {
-  const heading = document.createElement('p')
-  const topic = document.createElement('strong')
-  topic.textContent = list.topic
-  const count = document.createElement('span')
-  count.className = 'note'
-  count.textContent = ` — ${list.ideas.length} 件`
-  heading.append(topic, count)
+function tag(name: string, text: string, className?: string): HTMLElement {
+  const node = document.createElement(name)
+  node.textContent = text
+  if (className) node.className = className
+  return node
+}
 
-  const items = list.ideas.map((entry) => {
-    const item = document.createElement('li')
-
-    const badge = document.createElement('span')
-    badge.className = `effort ${entry.effort}`
-    badge.textContent = EFFORT[entry.effort]
-
-    const title = document.createElement('span')
-    title.className = 'title'
-    title.textContent = entry.title
-
-    item.append(badge, title)
-
-    if (entry.why) {
-      const why = document.createElement('span')
-      why.className = 'note'
-      why.textContent = ` — ${entry.why}`
-      item.append(why)
-    }
-    return item
-  })
-
-  const listing = document.createElement('ul')
-  listing.className = 'ideas'
-  listing.append(...items)
-
-  el('result').replaceChildren(heading, listing)
-  el('result-card').hidden = false
+/** セルには data-label を持たせる。狭い画面で「フィールド名: 値」に落とすため。 */
+function cell(label: string, text: string, className: string): HTMLElement {
+  const node = document.createElement('td')
+  node.dataset.label = label
+  node.append(tag('span', text, className))
+  return node
 }
 
 // --- 本体 ---------------------------------------------------------------------
@@ -285,8 +287,13 @@ setUpInstallTabs()
 renderDemo()
 
 const capabilities = detectCapabilities()
-renderCapabilities(capabilities)
-log(`送信は ${recommendTransports(capabilities).outbound[0] ?? 'なし'} を試します`)
+
+// 実機検証用。公開ページには出さず、?debug のときだけ見せる
+if (new URLSearchParams(location.search).has('debug')) {
+  const caps = maybe('caps')
+  if (caps) caps.hidden = false
+  renderCapabilities(capabilities)
+}
 
 // 戻り先の文面はアプリの UX なので、ライブラリ任せにせずここで決める
 const store = createLocalStorageStore()
@@ -297,23 +304,11 @@ const base = {
   returnTo: { name: 'uweb-cp のデモ', url: new URL(import.meta.env.BASE_URL, location.href).href },
 } as const
 
-const exchanges = {
-  now: createExchange({ ...base, emit: 'now' }),
-  'on-approval': createExchange({ ...base, emit: 'on-approval' }),
-}
-
-const selected = () => exchanges[field('emit').value === 'on-approval' ? 'on-approval' : 'now']
+/** 列挙は相談してから確定するのが自然なので、このデモは on-approval で固定する。 */
+const exchange = createExchange({ ...base, emit: 'on-approval' })
 
 function currentInput(): SendInput {
-  const instruction = field('instruction').value.trim()
-
-  return {
-    ...(instruction ? { instruction } : {}),
-    context: {
-      topic: field('topic').value,
-      count: Number(field('count').value),
-    },
-  }
+  return { context: { topic: field('topic').value } }
 }
 
 async function sendNow(): Promise<void> {
@@ -321,7 +316,7 @@ async function sendNow(): Promise<void> {
   send.disabled = true
 
   try {
-    const { via, rid, prompt, approvalPhrase } = await selected().send(currentInput())
+    const { via, rid, prompt, approvalPhrase } = await exchange.send(currentInput())
     log(`送信した: via=${via} rid=${rid} (${prompt.length} 文字)`, 'ok')
     if (via === 'clipboard') log('クリップボードに入れました。AI に貼り付けてください', 'warn')
     if (approvalPhrase) {
@@ -335,16 +330,20 @@ async function sendNow(): Promise<void> {
 }
 
 function handleResult(result: Result<Extraction<IdeaList>>): void {
+  // 状態は 1 行しか出せないので、コードと最初の理由を 1 本に畳む
   if (result.ok) {
     const { envelope, via, issues } = result.value
-    log(`取り込んだ: via=${via} rid=${envelope.rid ?? 'なし'}`, 'ok')
-    for (const issue of issues) log(`注意: ${issue.message}`, 'warn')
+    const note = issues[0]?.message
+    log(
+      `${envelope.data.ideas.length} 件を取り込みました（${via}）${note ? ` — ${note}` : ''}`,
+      issues.length > 0 ? 'warn' : 'ok',
+    )
     renderIdeas(envelope.data)
     return
   }
 
-  log(`取り込めなかった (${result.code})`, 'bad')
-  for (const issue of result.issues) log(`  ${issue.message}`, 'bad')
+  const reason = result.issues[0]?.message
+  log(`取り込めませんでした (${result.code})${reason ? ` — ${reason}` : ''}`, 'bad')
 }
 
 /**
@@ -359,14 +358,14 @@ async function importFromInbox(): Promise<void> {
     return
   }
   log(`手動で取り込み: ${text.length} 文字`)
-  handleResult(await exchanges.now.accept(text))
+  handleResult(await exchange.accept(text))
 }
 
 /** 引き取りは利用者の操作の中からしか呼べないので、ボタンの中で呼ぶ。 */
 async function pullFromClipboard(): Promise<void> {
   try {
     log('クリップボードを読みます…')
-    handleResult(await exchanges.now.pull())
+    handleResult(await exchange.pull())
   } catch (error) {
     const aborted = error instanceof UcpError && error.code === 'transport-aborted'
     log(aborted ? 'クリップボードの読み取りを拒否されました' : '読み取れませんでした', 'bad')
@@ -380,17 +379,10 @@ async function nudgeIfWaiting(): Promise<void> {
   log('戻ってきました。返信をここに貼り付けてください', 'warn')
 }
 
-// 受信は emit に依らないので片方だけ張れば足りる
-exchanges.now.listen(handleResult)
+exchange.listen(handleResult)
 
 el('send').addEventListener('click', () => {
   void sendNow()
-})
-
-el('toggle-preview').addEventListener('click', () => {
-  const pane = el('preview')
-  pane.hidden = !pane.hidden
-  if (!pane.hidden) pane.textContent = selected().preview(currentInput())
 })
 
 el('import').addEventListener('click', () => {
@@ -403,26 +395,16 @@ el('pull').addEventListener('click', () => {
   void pullFromClipboard()
 })
 
-// 診断用: 受信そのものが起きているかを、解釈の成否と切り離して見せる
+// 受信が起きたかどうかは console にだけ出す。
+// 状態行に出すと、直後の取り込み結果と表示を奪い合ってしまう
 document.addEventListener('paste', (event) => {
   const text = event.clipboardData?.getData('text/plain') ?? ''
-  log(`貼り付けを検知: ${text.length} 文字`)
+  console.debug(`[uweb-cp] 貼り付けを検知: ${text.length} 文字`)
 })
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') void nudgeIfWaiting()
 })
-
-const drop = el('drop')
-for (const type of ['dragenter', 'dragover'] as const) {
-  drop.addEventListener(type, (event) => {
-    event.preventDefault()
-    drop.classList.add('over')
-  })
-}
-for (const type of ['dragleave', 'drop'] as const) {
-  drop.addEventListener(type, () => drop.classList.remove('over'))
-}
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker

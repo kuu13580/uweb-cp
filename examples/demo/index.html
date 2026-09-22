@@ -335,8 +335,8 @@
       /* ---- 取り込んだ結果 ---- */
 
       #result-card {
-        border-top: 1px solid var(--hair);
-        margin-top: 16px;
+        border-top: 1px solid var(--line);
+        margin-top: 14px;
         padding-top: 14px;
       }
 
@@ -392,19 +392,78 @@
         font-size: 12.5px;
       }
 
-      /* ---- 診断（既定では畳む） ---- */
+      /* ---- 状態（1 行だけ） ---- */
 
-      details {
-        margin-top: 14px;
-        border-top: 1px solid var(--hair);
-        padding-top: 10px;
-      }
-
-      summary {
+      .status {
         font-size: 12.5px;
         color: var(--dim);
-        cursor: pointer;
+        margin: 12px 0 0;
+        min-height: 1.6em;
       }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .status.warn {
+        color: var(--accent);
+      }
+
+      .status.bad {
+        color: var(--bad);
+      }
+
+      /* ---- 受け取ったデータ ---- */
+
+      .summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        align-items: baseline;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--dim);
+        margin: 0 0 12px;
+      }
+
+      .summary code {
+        background: var(--code-bg);
+        color: var(--navy);
+      }
+
+      .summary .ok {
+        color: var(--ok);
+      }
+
+      table.data {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        display: table;
+        margin: 0;
+      }
+
+      table.data th {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--dim);
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+        padding: 0 12px 5px 0;
+      }
+
+      table.data td {
+        border-bottom: 1px solid var(--hair);
+        padding: 7px 12px 7px 0;
+        vertical-align: top;
+      }
+
+      table.data .title {
+        font-weight: 600;
+      }
+
+      /* ---- 診断（?debug のときだけ） ---- */
 
       .caps {
         display: grid;
@@ -677,6 +736,33 @@
         .duo {
           grid-template-columns: 1fr;
           gap: 20px;
+        }
+
+        /* 受け取ったデータは、狭いと列が潰れるので「フィールド名: 値」に落とす */
+        table.data thead {
+          display: none;
+        }
+
+        table.data tr {
+          display: block;
+          border-bottom: 1px solid var(--line);
+          padding: 8px 0;
+        }
+
+        table.data td {
+          display: flex;
+          gap: 8px;
+          border: 0;
+          padding: 1px 0;
+        }
+
+        table.data td::before {
+          content: attr(data-label);
+          font-family: var(--mono);
+          font-size: 11px;
+          color: var(--dim);
+          width: 46px;
+          flex: none;
         }
 
         /* 2 列の対比表は、狭いと 1 列目が潰れて読めなくなるので縦に積む */

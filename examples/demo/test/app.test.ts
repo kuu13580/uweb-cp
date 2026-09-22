@@ -44,17 +44,29 @@ describe('demo', () => {
     expect(document.getElementById('import')).not.toBeNull()
   })
 
-  it('shows what the environment supports', () => {
-    expect(document.getElementById('caps')?.textContent).toContain('paste イベント')
+  it('keeps the diagnostics out of the way unless asked', () => {
+    // 公開ページに出すと混乱するので、?debug のときだけ見せる
+    expect(document.getElementById('caps')?.hidden).toBe(true)
   })
 
-  it('can preview the prompt it would send', () => {
-    document.getElementById('toggle-preview')?.dispatchEvent(new Event('click'))
+  it('keeps only the controls needed to understand the round trip', () => {
+    const ids = [
+      ...document.querySelectorAll('#demo input, #demo textarea, #demo button, #demo select'),
+    ].map((node) => node.id)
+    expect(ids).toEqual(expect.arrayContaining(['topic', 'send', 'inbox', 'import']))
 
-    const preview = document.getElementById('preview')
-    expect(preview?.hidden).toBe(false)
-    expect(preview?.textContent).toContain('チーム内 Wiki に足す機能')
-    expect(preview?.textContent).toContain('"kind": "request"')
+    // 理解に要らないものは畳むのではなく消した
+    for (const gone of [
+      'count',
+      'nights',
+      'date',
+      'emit',
+      'instruction',
+      'toggle-preview',
+      'drop',
+    ]) {
+      expect(document.getElementById(gone)).toBeNull()
+    }
   })
 
   it('imports a pasted reply into the list view', async () => {
@@ -66,6 +78,30 @@ describe('demo', () => {
     expect(result?.textContent).toContain('チーム内 Wiki に足す機能')
     expect(result?.textContent).toContain('未更新ページの棚卸しリマインド')
     expect(result?.textContent).toContain('古い情報が残り続けるのが一番の害')
+  })
+
+  it('presents the result as data, not prose', async () => {
+    paste(reply('お題'))
+    await settle()
+
+    // 列見出しは実際のフィールド名。「型のある配列が届いた」ことを示すため
+    expect([...document.querySelectorAll('table.data th')].map((th) => th.textContent)).toEqual([
+      'title',
+      'why',
+      'effort',
+    ])
+    // 狭い画面で「フィールド名: 値」に落とすための印
+    expect(document.querySelector('td[data-label="effort"]')).not.toBeNull()
+  })
+
+  it('summarises the payload so the shape is visible', async () => {
+    paste(reply('お題'))
+    await settle()
+
+    const summary = document.querySelector('.summary')?.textContent ?? ''
+    expect(summary).toContain('idea.list@1')
+    expect(summary).toContain('ideas: 2 件')
+    expect(summary).toContain('small 1')
   })
 
   it('shows the effort enum as a badge', async () => {
@@ -80,7 +116,7 @@ describe('demo', () => {
     paste('すみません、今回は作れませんでした。')
     await settle()
 
-    expect(document.getElementById('log')?.textContent).toContain('no-envelope')
+    expect(document.getElementById('status')?.textContent).toContain('no-envelope')
   })
 
   it('rejects an envelope whose data breaks the contract', async () => {
@@ -95,6 +131,6 @@ describe('demo', () => {
     )
     await settle()
 
-    expect(document.getElementById('log')?.textContent).toContain('validation-failed')
+    expect(document.getElementById('status')?.textContent).toContain('validation-failed')
   })
 })
