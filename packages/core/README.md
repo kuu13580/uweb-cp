@@ -16,7 +16,10 @@ copy and a paste.
 npm i uweb-cp
 ```
 
-Zero runtime dependencies. Validation is brought by you — anything implementing
+The shipped JavaScript imports nothing. The single dependency, `@standard-schema/spec`, is
+types-only and appears in the `.d.ts` alone.
+
+Validation is brought by you — anything implementing
 [Standard Schema](https://standardschema.dev/) works.
 
 ## Why

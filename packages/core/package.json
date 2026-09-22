@@ -1,6 +1,6 @@
 {
   "name": "uweb-cp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Micro Web Context Provider - hand structured context to a consumer LLM app and get structured data back, using Web standards only.",
   "keywords": [
     "clipboard",
