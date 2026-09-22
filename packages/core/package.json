@@ -10,15 +10,28 @@
     "structured-output",
     "web-share"
   ],
+  "homepage": "https://kuu13580.github.io/uweb-cp/",
+  "bugs": "https://github.com/kuu13580/uweb-cp/issues",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuu13580/uweb-cp.git",
+    "directory": "packages/core"
+  },
   "files": [
     "dist"
   ],
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./dist/index.js",
-    "./transports": "./dist/transports/index.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./transports": {
+      "types": "./dist/transports/index.d.ts",
+      "default": "./dist/transports/index.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
