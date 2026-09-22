@@ -28,25 +28,6 @@ jobs:
       - run: vp run -r build
       - run: vp check
       - run: vp test run
-      - name: diagnose oidc
-        run: |
-          npm --version
-          echo "--- ACTIONS_ID_TOKEN_REQUEST_URL ---"
-          [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && echo present || echo MISSING
-          echo "--- ~/.npmrc ---"
-          sed -E 's/(_authToken=).*/\1***/' ~/.npmrc 2>/dev/null || echo "(none)"
-          echo "--- repo .npmrc ---"
-          cat .npmrc 2>/dev/null || echo "(none)"
-          echo "--- registry ---"
-          npm config get registry
-          echo "--- npm config list ---"
-          npm config list
-      # 切り分け: OIDC 自体が動いていないのか、stage publish だけ動かないのか。
-      # 0.1.0 は公開済みなので、認証を抜ければ「既にある」等の別の理由で落ちるはず
-      - name: diagnose provenance
-        continue-on-error: true
-        run: npm stage publish --provenance 2>&1 | tail -20
-        working-directory: packages/core
       # OIDC の資格情報では承認できない。そこが人の関門である意味なので、直接 publish しない
       - run: npm stage publish
         working-directory: packages/core
