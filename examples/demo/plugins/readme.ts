@@ -7,7 +7,8 @@ import type { Plugin } from 'vite-plus'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..', '..', '..')
-const README = join(ROOT, 'README.md')
+// 英語版のページを出すときは UWEB_CP_README=README.en.md を渡す
+const README = join(ROOT, process.env.UWEB_CP_README ?? 'README.md')
 
 const REPO = 'https://github.com/kuu13580/uweb-cp'
 const BRANCH = 'main'
