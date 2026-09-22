@@ -43,9 +43,9 @@ jobs:
           npm config list
       # 切り分け: OIDC 自体が動いていないのか、stage publish だけ動かないのか。
       # 0.1.0 は公開済みなので、認証を抜ければ「既にある」等の別の理由で落ちるはず
-      - name: diagnose plain publish
+      - name: diagnose provenance
         continue-on-error: true
-        run: npm publish 2>&1 | tail -20
+        run: npm stage publish --provenance 2>&1 | tail -20
         working-directory: packages/core
       # OIDC の資格情報では承認できない。そこが人の関門である意味なので、直接 publish しない
       - run: npm stage publish
