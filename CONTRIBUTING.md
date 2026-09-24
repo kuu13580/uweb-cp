@@ -44,7 +44,7 @@ pnpm run tunnel    # ビルド → preview → HTTPS トンネル → URL と QR
 pnpm exec changeset            # 変更の粒度と bump を書く
 pnpm exec changeset version    # version と CHANGELOG を更新
 git commit -am "chore(release): uweb-cp <version>"
-git tag uweb-cp@<version> && git push --follow-tags
+git tag uweb-cp@<version> && git push origin main uweb-cp@<version>
 ```
 
 タグの push で [Release ワークフロー](./.github/workflows/release.yml) が走り、
